@@ -35,7 +35,10 @@ jobs:
 
       - name: Run Godot test
         run: |
-          timeout 30 godot --headless --path . --quit-after 5
+          timeout 30 godot \
+            --headless \
+            --path . \
+            --quit-after 5
 
   build:
     name: Build Android APK
@@ -65,23 +68,61 @@ jobs:
         with:
           packages: "platform-tools platforms;android-35 build-tools;35.0.0"
 
-      - name: Start ADB server
-        run: |
-          adb start-server
-          adb version
-
-      - name: Verify Android SDK
+      - name: Configure Android environment
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+
+          export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+
+          echo "PATH=$PATH"
+
+          java -version
+          adb version
+          sdkmanager --version
+
+      - name: Start ADB daemon
+        run: |
+          export PATH="$ANDROID_HOME/platform-tools:$PATH"
+
+          echo "Starting ADB daemon..."
+
+          adb kill-server || true
+          adb start-server
+
+          echo "Checking ADB daemon..."
+
+          adb version
+          adb devices
+
+      - name: Verify Android SDK
+        run: |
+          export PATH="$ANDROID_HOME/platform-tools:$PATH"
+
+          echo "Installed Android SDK packages:"
           sdkmanager --list_installed
+
+          echo ""
+          echo "ADB devices:"
+          adb devices
 
       - name: Import Godot project
         run: |
-          godot --headless --editor --quit
+          godot \
+            --headless \
+            --editor \
+            --quit
 
       - name: Build Android APK
         run: |
+          export PATH="$ANDROID_HOME/platform-tools:$PATH"
+
+          echo "Checking ADB before Godot export..."
+          adb start-server
+          adb devices
+
+          echo "Starting Android export..."
+
           mkdir -p build
 
           godot \
@@ -92,6 +133,11 @@ jobs:
 
       - name: Check APK
         run: |
+          if [ ! -f build/arrow-puzzle.apk ]; then
+            echo "ERROR: APK was not created."
+            exit 1
+          fi
+
           ls -lh build/arrow-puzzle.apk
 
       - name: Upload APK
