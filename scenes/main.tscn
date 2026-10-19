@@ -1,0 +1,67 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_board"]
+
+[node name="Main" type="Node2D"]
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 720.0
+offset_bottom = 1280.0
+color = Color(0.0705882, 0.0431373, 0.141176, 1)
+
+[node name="Title" type="Label" parent="."]
+offset_left = 40.0
+offset_top = 50.0
+offset_right = 680.0
+offset_bottom = 120.0
+theme_override_colors/font_color = Color(0.709804, 0.54902, 1, 1)
+theme_override_font_sizes/font_size = 42
+text = "ARROW PUZZLE"
+horizontal_alignment = 1
+
+[node name="LevelLabel" type="Label" parent="."]
+offset_left = 40.0
+offset_top = 130.0
+offset_right = 680.0
+offset_bottom = 180.0
+theme_override_colors/font_color = Color(1, 0.717647, 0.909804, 1)
+theme_override_font_sizes/font_size = 28
+text = "TASO 1"
+horizontal_alignment = 1
+
+[node name="Board" type="ColorRect" parent="."]
+offset_left = 60.0
+offset_top = 230.0
+offset_right = 660.0
+offset_bottom = 830.0
+color = Color(0.129412, 0.0666667, 0.231373, 1)
+
+[node name="Instruction" type="Label" parent="."]
+offset_left = 70.0
+offset_top = 900.0
+offset_right = 650.0
+offset_bottom = 980.0
+theme_override_colors/font_color = Color(0.866667, 0.839216, 0.921569, 1)
+theme_override_font_sizes/font_size = 24
+text = "Napauta nuolta,\nkun sen edessä ei ole estettä."
+horizontal_alignment = 1
+
+[node name="MovesLabel" type="Label" parent="."]
+offset_left = 40.0
+offset_top = 1040.0
+offset_right = 680.0
+offset_bottom = 1090.0
+theme_override_colors/font_color = Color(1, 0.819608, 0.4, 1)
+theme_override_font_sizes/font_size = 26
+text = "LIIKKEET: 0"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="."]
+offset_left = 40.0
+offset_top = 1120.0
+offset_right = 680.0
+offset_bottom = 1170.0
+theme_override_colors/font_color = Color(0.709804, 0.54902, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "VALMIS"
+horizontal_alignment = 1
