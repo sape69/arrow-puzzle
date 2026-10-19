@@ -1,14 +1,46 @@
-name: Build Android APK
+name: Arrow Puzzle CI
 
 on:
   push:
     branches:
       - main
+
   workflow_dispatch:
+    inputs:
+      build_apk:
+        description: "Build Android APK after test"
+        required: true
+        default: false
+        type: boolean
 
 jobs:
+  test:
+    name: Godot Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: "4.5.1"
+          use-dotnet: false
+          include-templates: true
+
+      - name: Check project
+        run: |
+          godot --headless --editor --quit
+
+      - name: Run project test
+        run: |
+          timeout 30 godot --headless --path . --quit-after 5
+
   build:
-    name: Build Arrow Puzzle APK
+    name: Build Android APK
+    needs: test
+    if: ${{ github.event_name == 'push' || inputs.build_apk == true }}
     runs-on: ubuntu-latest
 
     steps:
@@ -19,12 +51,12 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - name: Setup Godot
         uses: chickensoft-games/setup-godot@v2
         with:
-          version: '4.5.1'
+          version: "4.5.1"
           use-dotnet: false
           include-templates: true
 
@@ -44,7 +76,11 @@ jobs:
       - name: Build Android APK
         run: |
           mkdir -p build
-          godot --headless --path . --export-debug "Android" build/arrow-puzzle.apk
+          godot \
+            --headless \
+            --path . \
+            --export-debug "Android" \
+            build/arrow-puzzle.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
