@@ -26,3 +26,11 @@ renderer/rendering_method.mobile="gl_compatibility"
 [gui]
 
 theme/default_font_multichannel_signed_distance_field=true
+
+[android]
+
+config/format=1
+config/name="Arrow Puzzle"
+config/package_name="com.arrowpuzzle.game"
+config/version/code=1
+config/version/name="1.0.0"
