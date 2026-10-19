@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../game/arrow.dart';
 import '../game/game_board.dart';
+import '../widgets/game_over_dialog.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -109,20 +110,8 @@ class _GameScreenState extends State<GameScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Game Over'),
-          content: const Text(
-            'You ran out of lives.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _restartGame();
-              },
-              child: const Text('TRY AGAIN'),
-            ),
-          ],
+        return GameOverDialog(
+          onTryAgain: _restartGame,
         );
       },
     );
@@ -130,70 +119,7 @@ class _GameScreenState extends State<GameScreen> {
 
   void _restartGame() {
     setState(() {
-      board.arrows.clear();
-      board.arrows.addAll([
-        const Arrow(
-          row: 1,
-          column: 1,
-          direction: ArrowDirection.up,
-        ),
-        const Arrow(
-          row: 1,
-          column: 2,
-          direction: ArrowDirection.up,
-        ),
-        const Arrow(
-          row: 1,
-          column: 3,
-          direction: ArrowDirection.up,
-        ),
-        const Arrow(
-          row: 1,
-          column: 4,
-          direction: ArrowDirection.up,
-        ),
-        const Arrow(
-          row: 2,
-          column: 1,
-          direction: ArrowDirection.left,
-        ),
-        const Arrow(
-          row: 2,
-          column: 3,
-          direction: ArrowDirection.up,
-        ),
-        const Arrow(
-          row: 2,
-          column: 5,
-          direction: ArrowDirection.right,
-        ),
-        const Arrow(
-          row: 3,
-          column: 1,
-          direction: ArrowDirection.left,
-        ),
-        const Arrow(
-          row: 3,
-          column: 2,
-          direction: ArrowDirection.down,
-        ),
-        const Arrow(
-          row: 3,
-          column: 3,
-          direction: ArrowDirection.right,
-        ),
-        const Arrow(
-          row: 3,
-          column: 4,
-          direction: ArrowDirection.down,
-        ),
-        const Arrow(
-          row: 3,
-          column: 5,
-          direction: ArrowDirection.right,
-        ),
-      ]);
-
+      board.reset();
       moves = 0;
       lives = 3;
       exitingArrow = null;
