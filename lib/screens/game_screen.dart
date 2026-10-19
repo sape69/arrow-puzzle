@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../game/arrow.dart';
 import '../game/game_board.dart';
 
 class GameScreen extends StatelessWidget {
@@ -30,10 +31,12 @@ class GameScreen extends StatelessWidget {
               final row = index ~/ board.size;
               final column = index % board.size;
 
-              final arrow = board.arrows.where(
-                (item) =>
-                    item.row == row && item.column == column,
-              ).firstOrNull;
+              final arrow = board.arrows
+                  .where(
+                    (item) =>
+                        item.row == row && item.column == column,
+                  )
+                  .firstOrNull;
 
               return Container(
                 decoration: BoxDecoration(
@@ -60,7 +63,7 @@ class GameScreen extends StatelessWidget {
     );
   }
 
-  String _arrowSymbol(direction) {
+  String _arrowSymbol(ArrowDirection direction) {
     switch (direction) {
       case ArrowDirection.up:
         return '↑';
