@@ -8,7 +8,7 @@ on:
 
 jobs:
   flutter:
-    name: Flutter Test & Android APK
+    name: Flutter Test & Release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -32,11 +32,14 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Build APK
-        run: flutter build apk --debug
+      - name: Test
+        run: flutter test
+
+      - name: Build Release APK
+        run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: arrow-puzzle-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: arrow-puzzle-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
