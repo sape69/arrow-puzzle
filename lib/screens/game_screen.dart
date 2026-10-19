@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../game/arrow.dart';
 import '../game/game_board.dart';
+import '../widgets/game_hud.dart';
 import '../widgets/game_over_dialog.dart';
 
 class GameScreen extends StatefulWidget {
@@ -138,25 +139,9 @@ class _GameScreenState extends State<GameScreen> {
       body: Column(
         children: [
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Moves: $moves',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 24),
-              Text(
-                '❤️ $lives',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+          GameHud(
+            moves: moves,
+            lives: lives,
           ),
           Expanded(
             child: Center(
