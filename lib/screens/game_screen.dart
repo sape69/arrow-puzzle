@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../game/arrow.dart';
@@ -218,11 +216,11 @@ class _GameScreenState extends State<GameScreen> {
     return TweenAnimationBuilder<double>(
       key: ValueKey(arrow),
       tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeIn,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOut,
       onEnd: () => _finishExit(arrow),
       builder: (context, value, child) {
-        final offset = _exitOffset(arrow.direction);
+        final offset = _exitOffset(arrow);
 
         return Opacity(
           opacity: 1 - value,
@@ -246,16 +244,24 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Offset _exitOffset(ArrowDirection direction) {
-    switch (direction) {
+  Offset _exitOffset(Arrow arrow) {
+    const cellSize = 56.0;
+
+    switch (arrow.direction) {
       case ArrowDirection.up:
-        return const Offset(0, -90);
+        return Offset(0, -(arrow.row + 1) * cellSize);
       case ArrowDirection.right:
-        return const Offset(90, 0);
+        return Offset(
+          (board.size - arrow.column) * cellSize,
+          0,
+        );
       case ArrowDirection.down:
-        return const Offset(0, 90);
+        return Offset(
+          0,
+          (board.size - arrow.row) * cellSize,
+        );
       case ArrowDirection.left:
-        return const Offset(-90, 0);
+        return Offset( -(arrow.column + 1) * cellSize, 0);
     }
   }
 
