@@ -79,26 +79,64 @@ class _GameScreenState extends State<GameScreen> {
     });
 
     if (board.arrows.isEmpty) {
-      _showWinDialog();
+      _completeLevel();
     }
   }
 
-  void _showWinDialog() {
+  void _completeLevel() {
+    if (board.nextLevel()) {
+      _showNextLevelDialog();
+      return;
+    }
+
+    _showAllLevelsCompleteDialog();
+  }
+
+  void _showNextLevelDialog() {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Level Complete!'),
+          title: Text('Level ${board.currentLevel} Complete!'),
           content: Text(
-            'Moves: $moves\nLives remaining: $lives',
+            'Get ready for Level ${board.currentLevel + 1}.',
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
+
+                setState(() {
+                  moves = 0;
+                  lives = 3;
+                });
               },
-              child: const Text('OK'),
+              child: const Text('NEXT LEVEL'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showAllLevelsCompleteDialog() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('All Levels Complete!'),
+          content: const Text(
+            'Congratulations!\nYou completed every level.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _restartGame();
+              },
+              child: const Text('PLAY AGAIN'),
             ),
           ],
         );
@@ -120,6 +158,7 @@ class _GameScreenState extends State<GameScreen> {
 
   void _restartGame() {
     setState(() {
+      board.currentLevel = 0;
       board.reset();
       moves = 0;
       lives = 3;
@@ -133,7 +172,7 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ARROW PUZZLE'),
+        title: Text('ARROW PUZZLE • LEVEL ${board.currentLevel + 1}'),
         centerTitle: true,
       ),
       body: Column(
