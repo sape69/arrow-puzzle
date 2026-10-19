@@ -1,0 +1,28 @@
+; Engine configuration file.
+; Arrow Puzzle
+; Godot 4.x
+
+config_version=5
+
+[application]
+
+config/name="Arrow Puzzle"
+config/description="A mobile arrow escape puzzle game."
+run/main_scene="res://scenes/main.tscn"
+
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/size/window_width_override=720
+window/size/window_height_override=1280
+window/stretch/mode="canvas_items"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+
+[gui]
+
+theme/default_font_multichannel_signed_distance_field=true
