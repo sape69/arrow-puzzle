@@ -6,12 +6,17 @@ extends Node2D
 # ============================================================
 
 const BOARD_SIZE := 7
-const TILE_SIZE := 76.0
 
-const BOARD_COLOR := Color("#21113B")
+# Board is 652 x 652 in main.tscn.
+const BOARD_PIXEL_SIZE := 652.0
+const TILE_SIZE := BOARD_PIXEL_SIZE / BOARD_SIZE
+
+const TILE_MARGIN := 4.0
+
 const TILE_COLOR := Color("#F8F1DF")
 const ARROW_COLOR := Color("#5A4638")
 const ARROW_BLOCKED_COLOR := Color("#D85C70")
+
 const STELLA_PURPLE := Color("#B58CFF")
 const STELLA_PINK := Color("#FFB7E8")
 const STAR_GOLD := Color("#FFD166")
@@ -29,10 +34,6 @@ var status_label: Label
 var level_label: Label
 
 
-# ============================================================
-# READY
-# ============================================================
-
 func _ready() -> void:
 	board_node = get_node_or_null("Board")
 	moves_label = get_node_or_null("MovesLabel")
@@ -47,7 +48,7 @@ func _ready() -> void:
 
 
 # ============================================================
-# LEVEL CREATION
+# LEVEL
 # ============================================================
 
 func _create_level() -> void:
@@ -59,6 +60,7 @@ func _create_level() -> void:
 	board = _create_level_data()
 
 	_create_arrow_buttons()
+
 	_update_labels()
 
 
@@ -73,18 +75,13 @@ func _create_level_data() -> Array:
 
 		new_board.append(row)
 
-	# --------------------------------------------------------
-	# Prototype level
+	# direction:
+	# 0 = UP
+	# 1 = RIGHT
+	# 2 = DOWN
+	# 3 = LEFT
 	#
-	# Each entry:
-	# [x, y, direction]
-	#
-	# Direction:
-	# 0 = up
-	# 1 = right
-	# 2 = down
-	# 3 = left
-	# --------------------------------------------------------
+	# This is the first hand-made test level.
 
 	var arrows := [
 		[1, 1, 0],
@@ -126,7 +123,7 @@ func _create_level_data() -> Array:
 
 
 # ============================================================
-# BOARD UI
+# CREATE ARROWS
 # ============================================================
 
 func _create_arrow_buttons() -> void:
@@ -134,6 +131,7 @@ func _create_arrow_buttons() -> void:
 
 	for y in range(BOARD_SIZE):
 		for x in range(BOARD_SIZE):
+
 			if board[y][x] == null:
 				continue
 
@@ -141,19 +139,22 @@ func _create_arrow_buttons() -> void:
 
 			button.name = "Arrow_%d_%d" % [x, y]
 
-			button.position = Vector2(
-				(x * TILE_SIZE) + 34.0,
-				(y * TILE_SIZE) + 34.0
+			var tile_position := Vector2(
+				x * TILE_SIZE + TILE_MARGIN,
+				y * TILE_SIZE + TILE_MARGIN
 			)
 
-			button.size = Vector2(
-				TILE_SIZE - 4.0,
-				TILE_SIZE - 4.0
+			var tile_size := Vector2(
+				TILE_SIZE - TILE_MARGIN * 2.0,
+				TILE_SIZE - TILE_MARGIN * 2.0
 			)
 
-			button.text = _direction_to_arrow(
-				board[y][x]["direction"]
-			)
+			button.position = tile_position
+			button.size = tile_size
+
+			var direction: int = board[y][x]["direction"]
+
+			button.text = _direction_to_arrow(direction)
 
 			button.add_theme_font_size_override(
 				"font_size",
@@ -180,8 +181,16 @@ func _create_arrow_buttons() -> void:
 				ARROW_COLOR
 			)
 
+			button.focus_mode = Control.FOCUS_NONE
+
+			# ----------------------------------------------------
+			# Normal tile
+			# ----------------------------------------------------
+
 			var normal_style := StyleBoxFlat.new()
+
 			normal_style.bg_color = TILE_COLOR
+
 			normal_style.corner_radius_top_left = 12
 			normal_style.corner_radius_top_right = 12
 			normal_style.corner_radius_bottom_left = 12
@@ -192,7 +201,12 @@ func _create_arrow_buttons() -> void:
 				normal_style
 			)
 
+			# ----------------------------------------------------
+			# Hover
+			# ----------------------------------------------------
+
 			var hover_style := normal_style.duplicate()
+
 			hover_style.bg_color = Color("#FFF8E8")
 
 			button.add_theme_stylebox_override(
@@ -200,13 +214,22 @@ func _create_arrow_buttons() -> void:
 				hover_style
 			)
 
+			# ----------------------------------------------------
+			# Pressed
+			# ----------------------------------------------------
+
 			var pressed_style := normal_style.duplicate()
+
 			pressed_style.bg_color = Color("#EADCFB")
 
 			button.add_theme_stylebox_override(
 				"pressed",
 				pressed_style
 			)
+
+			# ----------------------------------------------------
+			# Connect
+			# ----------------------------------------------------
 
 			button.pressed.connect(
 				_on_arrow_pressed.bind(x, y)
@@ -218,11 +241,17 @@ func _create_arrow_buttons() -> void:
 
 
 # ============================================================
-# ARROW INPUT
+# ARROW PRESS
 # ============================================================
 
 func _on_arrow_pressed(x: int, y: int) -> void:
 	if level_completed:
+		return
+
+	if y < 0 or y >= BOARD_SIZE:
+		return
+
+	if x < 0 or x >= BOARD_SIZE:
 		return
 
 	if board[y][x] == null:
@@ -238,7 +267,7 @@ func _on_arrow_pressed(x: int, y: int) -> void:
 
 
 # ============================================================
-# ESCAPE CHECK
+# CHECK IF ARROW CAN LEAVE
 # ============================================================
 
 func _can_arrow_escape(
@@ -247,24 +276,10 @@ func _can_arrow_escape(
 	direction: int
 ) -> bool:
 
-	var dx := 0
-	var dy := 0
+	var movement := _direction_vector(direction)
 
-	match direction:
-		0:
-			dy = -1
-
-		1:
-			dx = 1
-
-		2:
-			dy = 1
-
-		3:
-			dx = -1
-
-	var check_x := x + dx
-	var check_y := y + dy
+	var check_x := x + int(movement.x)
+	var check_y := y + int(movement.y)
 
 	while (
 		check_x >= 0
@@ -275,8 +290,8 @@ func _can_arrow_escape(
 		if board[check_y][check_x] != null:
 			return false
 
-		check_x += dx
-		check_y += dy
+		check_x += int(movement.x)
+		check_y += int(movement.y)
 
 	return true
 
@@ -293,19 +308,29 @@ func _remove_arrow(x: int, y: int) -> void:
 
 	var button: Button = arrow_buttons[key]
 
+	if not is_instance_valid(button):
+		arrow_buttons.erase(key)
+		return
+
+	var direction: int = board[y][x]["direction"]
+
+	var movement := _direction_vector(direction)
+
 	moves += 1
 
+	# Remove from logical board immediately.
 	board[y][x] = null
+
+	# Remove from dictionary immediately.
 	arrow_buttons.erase(key)
 
 	status_label.text = "NUOLI PÄÄSEE ULOS!"
 
-	var direction: int = 0
+	moves_label.text = "LIIKKEET: %d" % moves
 
-	if button != null:
-		direction = _get_direction_from_button(button)
-
-	var movement := _direction_vector(direction)
+	# ----------------------------------------------------------
+	# Animate arrow outside the board.
+	# ----------------------------------------------------------
 
 	var target_position := button.position + movement * 1800.0
 
@@ -322,16 +347,16 @@ func _remove_arrow(x: int, y: int) -> void:
 	)
 
 	tween.tween_callback(
-		func():
+		func() -> void:
 			if is_instance_valid(button):
 				button.queue_free()
 
 			_check_level_complete()
-	)
+		)
 
 
 # ============================================================
-# DIRECTION HELPERS
+# DIRECTION
 # ============================================================
 
 func _direction_vector(direction: int) -> Vector2:
@@ -368,23 +393,6 @@ func _direction_to_arrow(direction: int) -> String:
 	return "?"
 
 
-func _get_direction_from_button(button: Button) -> int:
-	match button.text:
-		"↑":
-			return 0
-
-		"→":
-			return 1
-
-		"↓":
-			return 2
-
-		"←":
-			return 3
-
-	return 0
-
-
 # ============================================================
 # BLOCKED FEEDBACK
 # ============================================================
@@ -397,6 +405,9 @@ func _show_blocked_feedback(x: int, y: int) -> void:
 
 	var button: Button = arrow_buttons[key]
 
+	if not is_instance_valid(button):
+		return
+
 	var original_color := button.get_theme_color(
 		"font_color"
 	)
@@ -408,31 +419,42 @@ func _show_blocked_feedback(x: int, y: int) -> void:
 
 	status_label.text = "NUOLI ON ESTETTY!"
 
+	# Small shake animation.
+
+	var original_position := button.position
+
 	var tween := create_tween()
 
 	tween.tween_property(
 		button,
-		"rotation",
-		0.08,
-		0.06
+		"position",
+		original_position + Vector2(8.0, 0.0),
+		0.05
 	)
 
 	tween.tween_property(
 		button,
-		"rotation",
-		-0.08,
-		0.06
+		"position",
+		original_position + Vector2(-8.0, 0.0),
+		0.05
 	)
 
 	tween.tween_property(
 		button,
-		"rotation",
-		0.0,
-		0.06
+		"position",
+		original_position + Vector2(5.0, 0.0),
+		0.05
+	)
+
+	tween.tween_property(
+		button,
+		"position",
+		original_position,
+		0.05
 	)
 
 	tween.tween_callback(
-		func():
+		func() -> void:
 			if is_instance_valid(button):
 				button.add_theme_color_override(
 					"font_color",
@@ -448,6 +470,7 @@ func _show_blocked_feedback(x: int, y: int) -> void:
 func _check_level_complete() -> void:
 	for y in range(BOARD_SIZE):
 		for x in range(BOARD_SIZE):
+
 			if board[y][x] != null:
 				return
 
@@ -459,7 +482,7 @@ func _check_level_complete() -> void:
 
 
 # ============================================================
-# RESET
+# CLEAR BOARD
 # ============================================================
 
 func _clear_board() -> void:
@@ -468,8 +491,11 @@ func _clear_board() -> void:
 	if board_node == null:
 		return
 
-	for child in board_node.get_children():
-		child.queue_free()
+	var children := board_node.get_children()
+
+	for child in children:
+		if is_instance_valid(child):
+			child.free()
 
 
 # ============================================================
