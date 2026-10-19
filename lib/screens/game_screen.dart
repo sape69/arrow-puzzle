@@ -43,24 +43,26 @@ class _GameScreenState extends State<GameScreen> {
     setState(() {
       failedArrow = arrow;
       lives--;
+      isAnimating = true;
     });
 
-    if (lives <= 0) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          _showGameOverDialog();
-        }
-      });
-      return;
-    }
-
-    Future.delayed(const Duration(milliseconds: 450), () {
+    Future.delayed(const Duration(milliseconds: 650), () {
       if (!mounted) {
+        return;
+      }
+
+      if (lives <= 0) {
+        setState(() {
+          isAnimating = false;
+        });
+
+        _showGameOverDialog();
         return;
       }
 
       setState(() {
         failedArrow = null;
+        isAnimating = false;
       });
     });
   }
@@ -192,12 +194,26 @@ class _GameScreenState extends State<GameScreen> {
     final isFailed = failedArrow == arrow;
 
     if (isFailed) {
-      return Text(
-        _arrowSymbol(arrow.direction),
-        style: const TextStyle(
-          fontSize: 30,
-          color: Colors.red,
-          fontWeight: FontWeight.bold,
+      return TweenAnimationBuilder<double>(
+        key: ValueKey('failed-$arrow'),
+        tween: Tween(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 650),
+        curve: Curves.easeInOut,
+        builder: (context, value, child) {
+          final offset = _collisionOffset(arrow, value);
+
+          return Transform.translate(
+            offset: offset,
+            child: child,
+          );
+        },
+        child: Text(
+          _arrowSymbol(arrow.direction),
+          style: const TextStyle(
+            fontSize: 30,
+            color: Colors.red,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       );
     }
@@ -244,6 +260,25 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  Offset _collisionOffset(Arrow arrow, double value) {
+    const collisionDistance = 24.0;
+
+    final movement = value <= 0.5
+        ? value * 2 * collisionDistance
+        : (1 - value) * 2 * collisionDistance;
+
+    switch (arrow.direction) {
+      case ArrowDirection.up:
+        return Offset(0, -movement);
+      case ArrowDirection.right:
+        return Offset(movement, 0);
+      case ArrowDirection.down:
+        return Offset(0, movement);
+      case ArrowDirection.left:
+        return Offset(-movement, 0);
+    }
+  }
+
   Offset _exitOffset(Arrow arrow) {
     const cellSize = 56.0;
 
@@ -261,7 +296,7 @@ class _GameScreenState extends State<GameScreen> {
           (board.size - arrow.row) * cellSize,
         );
       case ArrowDirection.left:
-        return Offset( -(arrow.column + 1) * cellSize, 0);
+        return Offset(-(arrow.column + 1) * cellSize, 0);
     }
   }
 
