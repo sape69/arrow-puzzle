@@ -1,4 +1,5 @@
 import 'arrow.dart';
+import 'level_data.dart';
 
 class GameBoard {
   GameBoard({
@@ -9,73 +10,24 @@ class GameBoard {
 
   final int size;
 
+  int currentLevel = 0;
+
   final List<Arrow> arrows = [];
 
   void reset() {
     arrows
       ..clear()
-      ..addAll([
-        const Arrow(
-          row: 1,
-          column: 1,
-          direction: ArrowDirection.up,
-        ),
-        const Arrow(
-          row: 1,
-          column: 2,
-          direction: ArrowDirection.up,
-        ),
-        const Arrow(
-          row: 1,
-          column: 3,
-          direction: ArrowDirection.up,
-        ),
-        const Arrow(
-          row: 1,
-          column: 4,
-          direction: ArrowDirection.up,
-        ),
-        const Arrow(
-          row: 2,
-          column: 1,
-          direction: ArrowDirection.left,
-        ),
-        const Arrow(
-          row: 2,
-          column: 3,
-          direction: ArrowDirection.up,
-        ),
-        const Arrow(
-          row: 2,
-          column: 5,
-          direction: ArrowDirection.right,
-        ),
-        const Arrow(
-          row: 3,
-          column: 1,
-          direction: ArrowDirection.left,
-        ),
-        const Arrow(
-          row: 3,
-          column: 2,
-          direction: ArrowDirection.down,
-        ),
-        const Arrow(
-          row: 3,
-          column: 3,
-          direction: ArrowDirection.right,
-        ),
-        const Arrow(
-          row: 3,
-          column: 4,
-          direction: ArrowDirection.down,
-        ),
-        const Arrow(
-          row: 3,
-          column: 5,
-          direction: ArrowDirection.right,
-        ),
-      ]);
+      ..addAll(levels[currentLevel].arrows);
+  }
+
+  bool nextLevel() {
+    if (currentLevel >= levels.length - 1) {
+      return false;
+    }
+
+    currentLevel++;
+    reset();
+    return true;
   }
 
   Arrow? arrowAt(int row, int column) {
