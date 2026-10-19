@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'screens/game_screen.dart';
+
 void main() {
   runApp(const ArrowPuzzleApp());
 }
@@ -20,18 +22,7 @@ class ArrowPuzzleApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'ARROW PUZZLE',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFB58CFF),
-            ),
-          ),
-        ),
-      ),
+      home: const GameScreen(),
     );
   }
 }
