@@ -29,11 +29,11 @@ jobs:
           use-dotnet: false
           include-templates: true
 
-      - name: Check project
+      - name: Check Godot project
         run: |
           godot --headless --editor --quit
 
-      - name: Run project test
+      - name: Run Godot test
         run: |
           timeout 30 godot --headless --path . --quit-after 5
 
@@ -65,6 +65,17 @@ jobs:
         with:
           packages: "platform-tools platforms;android-35 build-tools;35.0.0"
 
+      - name: Start ADB server
+        run: |
+          adb start-server
+          adb version
+
+      - name: Verify Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          sdkmanager --list_installed
+
       - name: Import Godot project
         run: |
           godot --headless --editor --quit
@@ -72,11 +83,16 @@ jobs:
       - name: Build Android APK
         run: |
           mkdir -p build
+
           godot \
             --headless \
             --path . \
             --export-debug "Android" \
             build/arrow-puzzle.apk
+
+      - name: Check APK
+        run: |
+          ls -lh build/arrow-puzzle.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
