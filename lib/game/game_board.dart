@@ -2,17 +2,15 @@ import 'arrow.dart';
 import 'level_data.dart';
 
 class GameBoard {
-  GameBoard({
-    this.size = 7,
-  }) {
+  GameBoard() {
     reset();
   }
-
-  final int size;
 
   int currentLevel = 0;
 
   final List<Arrow> arrows = [];
+
+  int get size => levels[currentLevel].size;
 
   void reset() {
     arrows
