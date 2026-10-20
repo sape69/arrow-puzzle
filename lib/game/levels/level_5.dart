@@ -1,17 +1,17 @@
 import '../arrow.dart';
 import '../level_data.dart';
 
-final level5 = LevelData(
+const level5 = LevelData(
   size: 8,
   arrows: [
     // Yläreuna
-    const Arrow(
+    Arrow(
       row: 0,
       column: 0,
       direction: ArrowDirection.right,
       length: 3,
     ),
-    const Arrow(
+    Arrow(
       row: 0,
       column: 5,
       direction: ArrowDirection.down,
@@ -19,13 +19,13 @@ final level5 = LevelData(
     ),
 
     // Vasen reuna
-    const Arrow(
+    Arrow(
       row: 2,
       column: 0,
       direction: ArrowDirection.down,
       length: 3,
     ),
-    const Arrow(
+    Arrow(
       row: 6,
       column: 0,
       direction: ArrowDirection.right,
@@ -33,7 +33,7 @@ final level5 = LevelData(
     ),
 
     // Pitkä keskialueen nuoli
-    const Arrow(
+    Arrow(
       row: 3,
       column: 2,
       direction: ArrowDirection.right,
@@ -44,6 +44,7 @@ final level5 = LevelData(
     Arrow.bent(
       row: 1,
       column: 3,
+      direction: ArrowDirection.down,
       path: [
         ArrowDirection.down,
         ArrowDirection.down,
@@ -56,6 +57,7 @@ final level5 = LevelData(
     Arrow.bent(
       row: 2,
       column: 6,
+      direction: ArrowDirection.left,
       path: [
         ArrowDirection.left,
         ArrowDirection.left,
@@ -68,6 +70,7 @@ final level5 = LevelData(
     Arrow.bent(
       row: 5,
       column: 4,
+      direction: ArrowDirection.up,
       path: [
         ArrowDirection.up,
         ArrowDirection.left,
@@ -77,7 +80,7 @@ final level5 = LevelData(
     ),
 
     // Alareunan pitkä nuoli
-    const Arrow(
+    Arrow(
       row: 7,
       column: 2,
       direction: ArrowDirection.right,
@@ -85,13 +88,13 @@ final level5 = LevelData(
     ),
 
     // Oikea reuna
-    const Arrow(
+    Arrow(
       row: 4,
       column: 7,
       direction: ArrowDirection.up,
       length: 3,
     ),
-    const Arrow(
+    Arrow(
       row: 7,
       column: 7,
       direction: ArrowDirection.up,
@@ -99,7 +102,7 @@ final level5 = LevelData(
     ),
 
     // Viimeinen pitkä nuoli
-    const Arrow(
+    Arrow(
       row: 5,
       column: 1,
       direction: ArrowDirection.right,
