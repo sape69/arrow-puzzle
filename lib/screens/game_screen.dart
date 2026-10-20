@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../game/arrow.dart';
 import '../game/game_board.dart';
+import '../widgets/arrow_exit_animation.dart';
 import '../widgets/arrow_widget.dart';
 import '../widgets/game_hud.dart';
 import '../widgets/game_over_dialog.dart';
@@ -301,18 +302,6 @@ class _GameScreenState extends State<GameScreen> {
     final isExiting = exitingArrow == arrow;
     final isFailed = failedArrow == arrow;
 
-    final width = _arrowWidth(
-      arrow,
-      cellSize,
-      spacing,
-    );
-
-    final height = _arrowHeight(
-      arrow,
-      cellSize,
-      spacing,
-    );
-
     return Positioned(
       left: _arrowLeft(
         arrow,
@@ -326,8 +315,16 @@ class _GameScreenState extends State<GameScreen> {
         spacing,
         padding,
       ),
-      width: width,
-      height: height,
+      width: _arrowWidth(
+        arrow,
+        cellSize,
+        spacing,
+      ),
+      height: _arrowHeight(
+        arrow,
+        cellSize,
+        spacing,
+      ),
       child: GestureDetector(
         onTap: () => _tapArrow(arrow),
         child: isFailed
@@ -409,45 +406,31 @@ class _GameScreenState extends State<GameScreen> {
     double spacing,
   ) {
     return TweenAnimationBuilder<double>(
-      key: ValueKey(arrow),
+      key: ValueKey(
+        'exit-${arrow.hashCode}',
+      ),
       tween: Tween(
         begin: 0,
         end: 1,
       ),
       duration: const Duration(
-        milliseconds: 450,
+        milliseconds: 700,
       ),
-      curve: Curves.easeOut,
+      curve: Curves.easeInOut,
       onEnd: () => _finishExit(arrow),
       builder: (
         context,
         value,
         child,
       ) {
-        final offset = _exitOffset(
-          arrow,
-          cellSize,
-          spacing,
-        );
-
-        return Opacity(
-          opacity: 1 - value,
-          child: Transform.translate(
-            offset: Offset(
-              offset.dx * value,
-              offset.dy * value,
-            ),
-            child: child,
-          ),
+        return ArrowExitAnimation(
+          arrow: arrow,
+          progress: value,
+          cellSize: cellSize,
+          spacing: spacing,
+          color: Colors.green,
         );
       },
-      child: Center(
-        child: ArrowWidget(
-          arrow: arrow,
-          cellSize: cellSize,
-          color: Colors.green,
-        ),
-      ),
     );
   }
 
@@ -536,6 +519,7 @@ class _GameScreenState extends State<GameScreen> {
         minColumn,
         column,
       );
+
       maxColumn = math.max(
         maxColumn,
         column,
@@ -573,6 +557,7 @@ class _GameScreenState extends State<GameScreen> {
         minRow,
         row,
       );
+
       maxRow = math.max(
         maxRow,
         row,
@@ -729,92 +714,6 @@ class _GameScreenState extends State<GameScreen> {
       case ArrowDirection.left:
         return Offset(
           -movement,
-          0,
-        );
-    }
-  }
-
-  Offset _exitOffset(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-  ) {
-    final step = cellSize + spacing;
-
-    if (arrow.isBent) {
-      final path = arrow.path!;
-
-      var row = arrow.row;
-      var column = arrow.column;
-
-      for (final direction in path) {
-        switch (direction) {
-          case ArrowDirection.up:
-            row--;
-            break;
-          case ArrowDirection.right:
-            column++;
-            break;
-          case ArrowDirection.down:
-            row++;
-            break;
-          case ArrowDirection.left:
-            column--;
-            break;
-        }
-      }
-
-      final lastDirection = path.last;
-
-      switch (lastDirection) {
-        case ArrowDirection.up:
-          return Offset(
-            0,
-            -(row + 1) * step,
-          );
-
-        case ArrowDirection.right:
-          return Offset(
-            (board.size - column) * step,
-            0,
-          );
-
-        case ArrowDirection.down:
-          return Offset(
-            0,
-            (board.size - row) * step,
-          );
-
-        case ArrowDirection.left:
-          return Offset(
-            -(column + 1) * step,
-            0,
-          );
-      }
-    }
-
-    switch (arrow.direction) {
-      case ArrowDirection.up:
-        return Offset(
-          0,
-          -(arrow.row + arrow.length) * step,
-        );
-
-      case ArrowDirection.right:
-        return Offset(
-          (board.size - arrow.column) * step,
-          0,
-        );
-
-      case ArrowDirection.down:
-        return Offset(
-          0,
-          (board.size - arrow.row) * step,
-        );
-
-      case ArrowDirection.left:
-        return Offset(
-          -(arrow.column + 1) * step,
           0,
         );
     }
