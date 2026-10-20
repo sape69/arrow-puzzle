@@ -57,195 +57,182 @@ class _ArrowExitPainter extends CustomPainter {
     Canvas canvas,
     Size size,
   ) {
-    final positions = _positions();
-
-    if (positions.isEmpty) {
+    if (arrow.isBent) {
+      _paintBentArrow(canvas);
       return;
     }
 
-    for (var i = 0; i < positions.length; i++) {
-      final delay = (positions.length - 1 - i) * 0.12;
+    _paintStraightArrow(canvas);
+  }
 
-      final localProgress = _delayedProgress(
-        progress,
-        delay,
-      );
+  void _paintStraightArrow(Canvas canvas) {
+    final count = arrow.length;
 
-      final offset = _movement(
-        positions[i],
-        localProgress,
-      );
+    final headTravel = step * 1.4 * progress;
+
+    for (var i = 0; i < count; i++) {
+      final lag = i * step;
+      final distance = headTravel - lag;
+
+      final center = _baseCenter(i) +
+          _directionOffset(
+            arrow.direction,
+            distance,
+          );
 
       _drawSegment(
         canvas,
-        positions[i] + offset,
-        i == positions.length - 1,
+        center,
+        i == 0,
       );
     }
   }
 
-  List<Offset> _positions() {
-    if (!arrow.isBent) {
-      return _straightPositions();
+  void _paintBentArrow(Canvas canvas) {
+    final points = _bentPoints();
+
+    if (points.isEmpty) {
+      return;
     }
 
-    return _bentPositions();
-  }
+    final headDistance =
+        _pathLength(points) * 0.45 * progress;
 
-  List<Offset> _straightPositions() {
-    final positions = <Offset>[];
+    for (var i = 0; i < points.length; i++) {
+      final distance =
+          headDistance - i * step;
 
-    for (var i = 0; i < arrow.length; i++) {
-      var dx = 0.0;
-      var dy = 0.0;
+      final point = _pointAlongPath(
+        points,
+        distance,
+      );
 
-      switch (arrow.direction) {
-        case ArrowDirection.up:
-          dy = -i * step;
-          break;
-        case ArrowDirection.right:
-          dx = i * step;
-          break;
-        case ArrowDirection.down:
-          dy = i * step;
-          break;
-        case ArrowDirection.left:
-          dx = -i * step;
-          break;
+      if (point == null) {
+        continue;
       }
 
-      positions.add(
-        Offset(
-          dx + cellSize / 2,
-          dy + cellSize / 2,
-        ),
+      _drawSegment(
+        canvas,
+        point.position,
+        i == 0,
+        direction: point.direction,
       );
     }
-
-    return positions;
   }
 
-  List<Offset> _bentPositions() {
-    final positions = <Offset>[
-      Offset(
-        cellSize / 2,
-        cellSize / 2,
+  Offset _baseCenter(int index) {
+    switch (arrow.direction) {
+      case ArrowDirection.up:
+        return Offset(
+          cellSize / 2,
+          cellSize / 2 + index * step,
+        );
+
+      case ArrowDirection.right:
+        return Offset(
+          cellSize / 2 + index * step,
+          cellSize / 2,
+        );
+
+      case ArrowDirection.down:
+        return Offset(
+          cellSize / 2,
+          cellSize / 2 + index * step,
+        );
+
+      case ArrowDirection.left:
+        return Offset(
+          cellSize / 2 + index * step,
+          cellSize / 2,
+        );
+    }
+  }
+
+  List<_PathPoint> _bentPoints() {
+    final points = <_PathPoint>[
+      _PathPoint(
+        position: Offset(
+          cellSize / 2,
+          cellSize / 2,
+        ),
+        direction: arrow.direction,
       ),
     ];
 
-    var dx = 0.0;
-    var dy = 0.0;
+    var x = cellSize / 2;
+    var y = cellSize / 2;
 
     for (final direction in arrow.path!) {
       switch (direction) {
         case ArrowDirection.up:
-          dy -= step;
+          y -= step;
           break;
         case ArrowDirection.right:
-          dx += step;
+          x += step;
           break;
         case ArrowDirection.down:
-          dy += step;
+          y += step;
           break;
         case ArrowDirection.left:
-          dx -= step;
+          x -= step;
           break;
       }
 
-      positions.add(
-        Offset(
-          dx + cellSize / 2,
-          dy + cellSize / 2,
+      points.add(
+        _PathPoint(
+          position: Offset(x, y),
+          direction: direction,
         ),
       );
     }
 
-    return positions;
+    return points;
   }
 
-  double _delayedProgress(
-    double value,
-    double delay,
+  double _pathLength(
+    List<_PathPoint> points,
   ) {
-    if (value <= delay) {
+    if (points.length < 2) {
       return 0;
     }
 
-    return ((value - delay) / (1 - delay))
-        .clamp(0.0, 1.0);
+    return (points.length - 1) * step;
   }
 
-  Offset _movement(
-    Offset position,
-    double value,
+  _PathPoint? _pointAlongPath(
+    List<_PathPoint> points,
+    double distance,
   ) {
-    final distance = step * value;
-
-    if (arrow.isBent) {
-      final direction = _directionForSegment(
-        position,
-      );
-
-      return _directionOffset(
-        direction,
-        distance,
-      );
+    if (points.isEmpty) {
+      return null;
     }
 
-    return _directionOffset(
-      arrow.direction,
-      distance,
+    if (distance <= 0) {
+      return points.first;
+    }
+
+    final maxDistance =
+        (points.length - 1) * step;
+
+    if (distance >= maxDistance) {
+      return points.last;
+    }
+
+    final segment = distance / step;
+    final index = segment.floor();
+    final local = segment - index;
+
+    final start = points[index];
+    final end = points[index + 1];
+
+    return _PathPoint(
+      position: Offset.lerp(
+        start.position,
+        end.position,
+        local,
+      )!,
+      direction: end.direction,
     );
-  }
-
-  ArrowDirection _directionForSegment(
-    Offset position,
-  ) {
-    final path = arrow.path!;
-
-    if (path.isEmpty) {
-      return arrow.direction;
-    }
-
-    var closestIndex = 0;
-    var closestDistance = double.infinity;
-
-    for (var i = 0; i < path.length; i++) {
-      final direction = path[i];
-
-      final distance = _distanceToDirection(
-        position,
-        direction,
-      );
-
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIndex = i;
-      }
-    }
-
-    return path[
-      math.min(
-        closestIndex,
-        path.length - 1,
-      )
-    ];
-  }
-
-  double _distanceToDirection(
-    Offset position,
-    ArrowDirection direction,
-  ) {
-    switch (direction) {
-      case ArrowDirection.up:
-        return position.dy.abs();
-      case ArrowDirection.right:
-        return position.dx.abs();
-      case ArrowDirection.down:
-        return position.dy.abs();
-      case ArrowDirection.left:
-        return position.dx.abs();
-    }
   }
 
   Offset _directionOffset(
@@ -255,10 +242,13 @@ class _ArrowExitPainter extends CustomPainter {
     switch (direction) {
       case ArrowDirection.up:
         return Offset(0, -distance);
+
       case ArrowDirection.right:
         return Offset(distance, 0);
+
       case ArrowDirection.down:
         return Offset(0, distance);
+
       case ArrowDirection.left:
         return Offset(-distance, 0);
     }
@@ -267,112 +257,113 @@ class _ArrowExitPainter extends CustomPainter {
   void _drawSegment(
     Canvas canvas,
     Offset center,
-    bool isHead,
-  ) {
-    final iconSize = math.min(
-      cellSize * 0.55,
-      36.0,
-    );
+    bool isHead, {
+    ArrowDirection? direction,
+  }) {
+    final actualDirection =
+        direction ?? arrow.direction;
+
+    final shaftWidth =
+        math.max(4.0, cellSize * 0.10);
+
+    final headSize =
+        math.min(cellSize * 0.28, 14.0);
 
     final paint = Paint()
       ..color = color
-      ..style = PaintingStyle.fill;
+      ..strokeWidth = shaftWidth
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
 
-    canvas.drawCircle(
-      center,
-      iconSize * 0.22,
+    if (!isHead) {
+      final start = center -
+          _directionOffset(
+            actualDirection,
+            cellSize * 0.30,
+          );
+
+      final end = center +
+          _directionOffset(
+            actualDirection,
+            cellSize * 0.30,
+          );
+
+      canvas.drawLine(
+        start,
+        end,
+        paint,
+      );
+
+      return;
+    }
+
+    final shaftStart = center -
+        _directionOffset(
+          actualDirection,
+          cellSize * 0.28,
+        );
+
+    final shaftEnd = center +
+        _directionOffset(
+          actualDirection,
+          cellSize * 0.10,
+        );
+
+    canvas.drawLine(
+      shaftStart,
+      shaftEnd,
       paint,
     );
 
-    if (isHead) {
-      _drawHead(
-        canvas,
-        center,
-      );
-    }
-  }
+    final head = Path();
 
-  void _drawHead(
-    Canvas canvas,
-    Offset center,
-  ) {
-    final size = cellSize * 0.20;
+    final tip = center +
+        _directionOffset(
+          actualDirection,
+          cellSize * 0.30,
+        );
 
-    final path = Path();
+    final sideDirection =
+        _perpendicular(actualDirection);
 
-    switch (arrow.direction) {
-      case ArrowDirection.up:
-        path
-          ..moveTo(
-            center.dx,
-            center.dy - size * 2,
-          )
-          ..lineTo(
-            center.dx - size,
-            center.dy,
-          )
-          ..lineTo(
-            center.dx + size,
-            center.dy,
-          );
-        break;
+    final left = tip -
+        _directionOffset(
+          sideDirection,
+          headSize,
+        );
 
-      case ArrowDirection.right:
-        path
-          ..moveTo(
-            center.dx + size * 2,
-            center.dy,
-          )
-          ..lineTo(
-            center.dx,
-            center.dy - size,
-          )
-          ..lineTo(
-            center.dx,
-            center.dy + size,
-          );
-        break;
+    final right = tip +
+        _directionOffset(
+          sideDirection,
+          headSize,
+        );
 
-      case ArrowDirection.down:
-        path
-          ..moveTo(
-            center.dx,
-            center.dy + size * 2,
-          )
-          ..lineTo(
-            center.dx - size,
-            center.dy,
-          )
-          ..lineTo(
-            center.dx + size,
-            center.dy,
-          );
-        break;
+    head
+      ..moveTo(tip.dx, tip.dy)
+      ..lineTo(left.dx, left.dy)
+      ..lineTo(right.dx, right.dy)
+      ..close();
 
-      case ArrowDirection.left:
-        path
-          ..moveTo(
-            center.dx - size * 2,
-            center.dy,
-          )
-          ..lineTo(
-            center.dx,
-            center.dy - size,
-          )
-          ..lineTo(
-            center.dx,
-            center.dy + size,
-          );
-        break;
-    }
-
-    path.close();
     canvas.drawPath(
-      path,
+      head,
       Paint()
         ..color = color
         ..style = PaintingStyle.fill,
     );
+  }
+
+  ArrowDirection _perpendicular(
+    ArrowDirection direction,
+  ) {
+    switch (direction) {
+      case ArrowDirection.up:
+      case ArrowDirection.down:
+        return ArrowDirection.right;
+
+      case ArrowDirection.left:
+      case ArrowDirection.right:
+        return ArrowDirection.down;
+    }
   }
 
   @override
@@ -385,4 +376,14 @@ class _ArrowExitPainter extends CustomPainter {
         oldDelegate.spacing != spacing ||
         oldDelegate.color != color;
   }
+}
+
+class _PathPoint {
+  const _PathPoint({
+    required this.position,
+    required this.direction,
+  });
+
+  final Offset position;
+  final ArrowDirection direction;
 }
