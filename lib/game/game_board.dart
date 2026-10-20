@@ -45,26 +45,55 @@ class GameBoard {
     int row,
     int column,
   ) {
-    for (var i = 0; i < arrow.length; i++) {
-      var arrowRow = arrow.row;
-      var arrowColumn = arrow.column;
+    var currentRow = arrow.row;
+    var currentColumn = arrow.column;
 
-      switch (arrow.direction) {
+    if (currentRow == row && currentColumn == column) {
+      return true;
+    }
+
+    if (!arrow.isBent) {
+      for (var i = 1; i < arrow.length; i++) {
+        switch (arrow.direction) {
+          case ArrowDirection.up:
+            currentRow--;
+            break;
+          case ArrowDirection.right:
+            currentColumn++;
+            break;
+          case ArrowDirection.down:
+            currentRow++;
+            break;
+          case ArrowDirection.left:
+            currentColumn--;
+            break;
+        }
+
+        if (currentRow == row && currentColumn == column) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    for (final direction in arrow.path!) {
+      switch (direction) {
         case ArrowDirection.up:
-          arrowRow -= i;
+          currentRow--;
           break;
         case ArrowDirection.right:
-          arrowColumn += i;
+          currentColumn++;
           break;
         case ArrowDirection.down:
-          arrowRow += i;
+          currentRow++;
           break;
         case ArrowDirection.left:
-          arrowColumn -= i;
+          currentColumn--;
           break;
       }
 
-      if (arrowRow == row && arrowColumn == column) {
+      if (currentRow == row && currentColumn == column) {
         return true;
       }
     }
@@ -76,8 +105,76 @@ class GameBoard {
     var row = arrow.row;
     var column = arrow.column;
 
+    if (arrow.isBent) {
+      for (final direction in arrow.path!) {
+        switch (direction) {
+          case ArrowDirection.up:
+            row--;
+            break;
+          case ArrowDirection.right:
+            column++;
+            break;
+          case ArrowDirection.down:
+            row++;
+            break;
+          case ArrowDirection.left:
+            column--;
+            break;
+        }
+      }
+
+      return _pathToExit(
+        arrow,
+        row,
+        column,
+        arrow.path!.last,
+      );
+    }
+
+    switch (arrow.direction) {
+      case ArrowDirection.up:
+        row -= arrow.length;
+        break;
+      case ArrowDirection.right:
+        column += arrow.length;
+        break;
+      case ArrowDirection.down:
+        row += arrow.length;
+        break;
+      case ArrowDirection.left:
+        column -= arrow.length;
+        break;
+    }
+
+    return _pathToExit(
+      arrow,
+      row,
+      column,
+      arrow.direction,
+    );
+  }
+
+  bool _pathToExit(
+    Arrow arrow,
+    int row,
+    int column,
+    ArrowDirection direction,
+  ) {
     while (true) {
-      switch (arrow.direction) {
+      if (row < 0 ||
+          row >= size ||
+          column < 0 ||
+          column >= size) {
+        return true;
+      }
+
+      final blockingArrow = arrowAt(row, column);
+
+      if (blockingArrow != null && blockingArrow != arrow) {
+        return false;
+      }
+
+      switch (direction) {
         case ArrowDirection.up:
           row--;
           break;
@@ -90,19 +187,6 @@ class GameBoard {
         case ArrowDirection.left:
           column--;
           break;
-      }
-
-      if (row < 0 ||
-          row >= size ||
-          column < 0 ||
-          column >= size) {
-        return true;
-      }
-
-      final blockingArrow = arrowAt(row, column);
-
-      if (blockingArrow != null && blockingArrow != arrow) {
-        return false;
       }
     }
   }
