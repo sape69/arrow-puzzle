@@ -276,16 +276,14 @@ class _GameScreenState extends State<GameScreen> {
             },
           ),
         ),
-
         ..._buildArrowWidgets(
           cellSize,
           spacing,
           padding,
         ),
-
         if (exitingArrow != null)
           _buildExitAnimation(
-            exitingArrow!,
+            exitingArrow,
             cellSize,
             spacing,
             padding,
@@ -541,7 +539,7 @@ class _GameScreenState extends State<GameScreen> {
     var minColumn = 0;
     var maxColumn = 0;
 
-    for (final direction in arrow.path!) {
+    for (final direction in arrow.path) {
       switch (direction) {
         case ArrowDirection.left:
           column--;
@@ -579,7 +577,7 @@ class _GameScreenState extends State<GameScreen> {
     var minRow = 0;
     var maxRow = 0;
 
-    for (final direction in arrow.path!) {
+    for (final direction in arrow.path) {
       switch (direction) {
         case ArrowDirection.up:
           row--;
@@ -669,7 +667,7 @@ class _GameScreenState extends State<GameScreen> {
     var column = 0;
     var minColumn = 0;
 
-    for (final direction in arrow.path!) {
+    for (final direction in arrow.path) {
       if (direction == ArrowDirection.left) {
         column--;
       } else if (direction == ArrowDirection.right) {
@@ -696,7 +694,7 @@ class _GameScreenState extends State<GameScreen> {
     var row = 0;
     var minRow = 0;
 
-    for (final direction in arrow.path!) {
+    for (final direction in arrow.path) {
       if (direction == ArrowDirection.up) {
         row--;
       } else if (direction == ArrowDirection.down) {
