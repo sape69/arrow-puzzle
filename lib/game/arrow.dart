@@ -11,25 +11,45 @@ class Arrow {
     required this.column,
     required this.direction,
     this.length = 1,
-  }) : path = null;
+  }) : path = const [];
 
-  Arrow.bent({
+  const Arrow.bent({
     required this.row,
     required this.column,
-    required List<ArrowDirection> path,
-  })  : path = List.unmodifiable(path),
-        direction = path.last,
-        length = path.length;
+    required this.direction,
+    required this.path,
+  }) : length = 1;
 
   final int row;
   final int column;
-  final ArrowDirection direction;
-  final int length;
-  final List<ArrowDirection>? path;
 
-  bool get isBent => path != null;
+  /// Nuolen ensimmäinen/suuntaava suunta.
+  final ArrowDirection direction;
+
+  /// Suoran nuolen pituus.
+  final int length;
+
+  /// Mutkittelevan nuolen koko reitti.
+  ///
+  /// Jokainen alkio kertoo yhden ruudun liikkeen.
+  final List<ArrowDirection> path;
+
+  bool get isBent => path.isNotEmpty;
 
   int get segmentCount {
-    return isBent ? path!.length : length;
+    if (isBent) {
+      return path.length;
+    }
+
+    return length;
+  }
+
+  /// Mutkittelevan nuolen viimeinen suunta.
+  ArrowDirection get exitDirection {
+    if (path.isEmpty) {
+      return direction;
+    }
+
+    return path.last;
   }
 }
