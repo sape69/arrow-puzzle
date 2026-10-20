@@ -13,35 +13,18 @@ class Arrow {
     this.length = 1,
   }) : path = null;
 
-  const Arrow.bent({
+  Arrow.bent({
     required this.row,
     required this.column,
-    required this.path,
-  })  : direction = path.last,
-        length = path.length,
-        assert(path.isNotEmpty);
+    required List<ArrowDirection> path,
+  })  : path = List.unmodifiable(path),
+        direction = path.last,
+        length = path.length;
 
   final int row;
   final int column;
-
-  /// Suoran nuolen suunta.
-  ///
-  /// Mutkittelevalla nuolella tämä on viimeisen
-  /// osuuden suunta eli nuolen kärjen suunta.
   final ArrowDirection direction;
-
-  /// Suoran nuolen pituus.
   final int length;
-
-  /// Mutkittelevan nuolen liikesuunta ruutu kerrallaan.
-  ///
-  /// Esimerkiksi:
-  /// [right, right, down, down]
-  ///
-  /// tekee tällaisen reitin:
-  ///
-  /// → → ↓
-  ///     ↓
   final List<ArrowDirection>? path;
 
   bool get isBent => path != null;
