@@ -325,8 +325,7 @@ class _GameScreenState extends State<GameScreen> {
         cellSize,
         spacing,
       ),
-      child: GestureDetector(
-        onTap: () => _tapArrow(arrow),
+      child: IgnorePointer(
         child: isFailed
             ? _buildFailedArrow(
                 arrow,
@@ -680,8 +679,7 @@ class _GameScreenState extends State<GameScreen> {
     double value,
     double cellSize,
   ) {
-    final collisionDistance =
-        math.min(
+    final collisionDistance = math.min(
       24.0,
       cellSize * 0.45,
     );
