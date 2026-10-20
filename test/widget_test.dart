@@ -6,6 +6,14 @@ void main() {
   testWidgets('Arrow Puzzle opens', (tester) async {
     await tester.pumpWidget(const ArrowPuzzleApp());
 
-    expect(find.text('ARROW PUZZLE'), findsOneWidget);
+    expect(
+      find.textContaining('ARROW PUZZLE'),
+      findsOneWidget,
+    );
+
+    expect(
+      find.textContaining('LEVEL 1'),
+      findsOneWidget,
+    );
   });
 }
