@@ -11,6 +11,7 @@ class ArrowExitAnimation extends StatelessWidget {
     required this.progress,
     required this.cellSize,
     required this.spacing,
+    required this.boardSize,
     this.color = Colors.green,
   });
 
@@ -18,6 +19,7 @@ class ArrowExitAnimation extends StatelessWidget {
   final double progress;
   final double cellSize;
   final double spacing;
+  final int boardSize;
   final Color color;
 
   @override
@@ -28,6 +30,7 @@ class ArrowExitAnimation extends StatelessWidget {
         progress: progress,
         cellSize: cellSize,
         spacing: spacing,
+        boardSize: boardSize,
         color: color,
       ),
       size: Size.infinite,
@@ -41,6 +44,7 @@ class _ArrowExitPainter extends CustomPainter {
     required this.progress,
     required this.cellSize,
     required this.spacing,
+    required this.boardSize,
     required this.color,
   });
 
@@ -48,6 +52,7 @@ class _ArrowExitPainter extends CustomPainter {
   final double progress;
   final double cellSize;
   final double spacing;
+  final int boardSize;
   final Color color;
 
   double get step => cellSize + spacing;
@@ -64,12 +69,11 @@ class _ArrowExitPainter extends CustomPainter {
     }
 
     final occupiedLength = _occupiedLength(points);
-
-    final boardExitLength = step * 0.75;
+    final edgeLength = _distanceToEdge();
 
     final headDistance =
         occupiedLength +
-        boardExitLength * progress;
+        edgeLength * progress;
 
     final snakeLength = math.max(
       cellSize * 0.9,
@@ -152,17 +156,7 @@ class _ArrowExitPainter extends CustomPainter {
 
     final exitDirection = arrow.exitDirection;
 
-    final edgeDistance = _distanceToBoardEdge(
-      x,
-      y,
-      exitDirection,
-      size: null,
-    );
-
-    final exitSteps = math.max(
-      1,
-      (edgeDistance / step).ceil(),
-    );
+    final exitSteps = _exitSteps();
 
     for (var i = 0; i < exitSteps; i++) {
       final offset = _directionOffset(
@@ -184,24 +178,46 @@ class _ArrowExitPainter extends CustomPainter {
     return points;
   }
 
+  int _exitSteps() {
+    switch (arrow.exitDirection) {
+      case ArrowDirection.up:
+        return arrow.row + 1;
+
+      case ArrowDirection.right:
+        return boardSize - arrow.column;
+
+      case ArrowDirection.down:
+        return boardSize - arrow.row;
+
+      case ArrowDirection.left:
+        return arrow.column + 1;
+    }
+  }
+
+  double _distanceToEdge() {
+    final steps = _exitSteps();
+
+    if (steps <= 1) {
+      return cellSize / 2;
+    }
+
+    return ((steps - 1) * step) +
+        (cellSize / 2);
+  }
+
   double _occupiedLength(
     List<_PathPoint> points,
   ) {
-    if (points.length < 2) {
-      return 0;
-    }
-
-    var length = 0.0;
-
     final occupiedPoints = arrow.isBent
         ? arrow.path.length + 1
         : arrow.length;
 
-    final end =
-        math.min(
-          occupiedPoints,
-          points.length,
-        );
+    final end = math.min(
+      occupiedPoints,
+      points.length,
+    );
+
+    var length = 0.0;
 
     for (var i = 1; i < end; i++) {
       length +=
@@ -211,18 +227,6 @@ class _ArrowExitPainter extends CustomPainter {
     }
 
     return length;
-  }
-
-  double _distanceToBoardEdge(
-    double x,
-    double y,
-    ArrowDirection direction, {
-    required Size? size,
-  }) {
-    // The animation is positioned relative to the arrow's
-    // starting grid cell. The arrow only needs a short
-    // movement beyond its final cell before disappearing.
-    return step * 1.2;
   }
 
   List<_PathPoint> _visiblePoints(
@@ -428,28 +432,16 @@ class _ArrowExitPainter extends CustomPainter {
   ) {
     switch (direction) {
       case ArrowDirection.up:
-        return Offset(
-          0,
-          -distance,
-        );
+        return Offset(0, -distance);
 
       case ArrowDirection.right:
-        return Offset(
-          distance,
-          0,
-        );
+        return Offset(distance, 0);
 
       case ArrowDirection.down:
-        return Offset(
-          0,
-          distance,
-        );
+        return Offset(0, distance);
 
       case ArrowDirection.left:
-        return Offset(
-          -distance,
-          0,
-        );
+        return Offset(-distance, 0);
     }
   }
 
@@ -475,6 +467,7 @@ class _ArrowExitPainter extends CustomPainter {
         oldDelegate.arrow != arrow ||
         oldDelegate.cellSize != cellSize ||
         oldDelegate.spacing != spacing ||
+        oldDelegate.boardSize != boardSize ||
         oldDelegate.color != color;
   }
 }
