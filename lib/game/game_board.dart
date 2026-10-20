@@ -78,7 +78,7 @@ class GameBoard {
       return false;
     }
 
-    for (final direction in arrow.path!) {
+    for (final direction in arrow.path) {
       final next = _move(
         currentRow,
         currentColumn,
@@ -98,56 +98,38 @@ class GameBoard {
   }
 
   bool canExit(Arrow arrow) {
-    final tip = _arrowTip(arrow);
-
-    return _clearToEdge(
-      arrow,
-      tip.row,
-      tip.column,
-      tip.direction,
-    );
-  }
-
-  _ArrowTip _arrowTip(Arrow arrow) {
     var row = arrow.row;
     var column = arrow.column;
-    var direction = arrow.direction;
 
     if (arrow.isBent) {
-      for (final pathDirection in arrow.path!) {
+      for (final direction in arrow.path) {
         final next = _move(
           row,
           column,
-          pathDirection,
+          direction,
         );
 
         row = next.row;
         column = next.column;
-        direction = pathDirection;
       }
+    } else {
+      for (var i = 1; i < arrow.length; i++) {
+        final next = _move(
+          row,
+          column,
+          arrow.direction,
+        );
 
-      return _ArrowTip(
-        row: row,
-        column: column,
-        direction: direction,
-      );
+        row = next.row;
+        column = next.column;
+      }
     }
 
-    for (var i = 1; i < arrow.length; i++) {
-      final next = _move(
-        row,
-        column,
-        arrow.direction,
-      );
-
-      row = next.row;
-      column = next.column;
-    }
-
-    return _ArrowTip(
-      row: row,
-      column: column,
-      direction: arrow.direction,
+    return _clearToEdge(
+      arrow,
+      row,
+      column,
+      arrow.exitDirection,
     );
   }
 
@@ -224,18 +206,6 @@ class GameBoard {
   void removeArrow(Arrow arrow) {
     arrows.remove(arrow);
   }
-}
-
-class _ArrowTip {
-  const _ArrowTip({
-    required this.row,
-    required this.column,
-    required this.direction,
-  });
-
-  final int row;
-  final int column;
-  final ArrowDirection direction;
 }
 
 class _GridPosition {
