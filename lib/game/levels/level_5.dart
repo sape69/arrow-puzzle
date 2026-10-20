@@ -4,13 +4,13 @@ import '../level_data.dart';
 const level5 = LevelData(
   size: 8,
   arrows: [
-    // Yläreuna
     Arrow(
       row: 0,
       column: 0,
       direction: ArrowDirection.right,
       length: 3,
     ),
+
     Arrow(
       row: 0,
       column: 5,
@@ -18,13 +18,13 @@ const level5 = LevelData(
       length: 2,
     ),
 
-    // Vasen reuna
     Arrow(
       row: 2,
       column: 0,
       direction: ArrowDirection.down,
       length: 3,
     ),
+
     Arrow(
       row: 6,
       column: 0,
@@ -32,7 +32,6 @@ const level5 = LevelData(
       length: 2,
     ),
 
-    // Pitkä keskialueen nuoli
     Arrow(
       row: 3,
       column: 2,
@@ -40,23 +39,21 @@ const level5 = LevelData(
       length: 3,
     ),
 
-    // Mutkitteleva nuoli
     Arrow.bent(
       row: 1,
       column: 3,
-      direction: ArrowDirection.down,
+      direction: ArrowDirection.right,
       path: [
-        ArrowDirection.down,
+        ArrowDirection.right,
         ArrowDirection.down,
         ArrowDirection.right,
         ArrowDirection.right,
       ],
     ),
 
-    // Toinen mutkitteleva nuoli
     Arrow.bent(
-      row: 2,
-      column: 6,
+      row: 3,
+      column: 7,
       direction: ArrowDirection.left,
       path: [
         ArrowDirection.left,
@@ -66,7 +63,6 @@ const level5 = LevelData(
       ],
     ),
 
-    // Keskellä oleva mutkitteleva nuoli
     Arrow.bent(
       row: 5,
       column: 4,
@@ -79,7 +75,6 @@ const level5 = LevelData(
       ],
     ),
 
-    // Alareunan pitkä nuoli
     Arrow(
       row: 7,
       column: 2,
@@ -87,24 +82,23 @@ const level5 = LevelData(
       length: 3,
     ),
 
-    // Oikea reuna
     Arrow(
-      row: 4,
+      row: 6,
       column: 7,
       direction: ArrowDirection.up,
       length: 3,
     ),
+
     Arrow(
       row: 7,
-      column: 7,
+      column: 6,
       direction: ArrowDirection.up,
       length: 2,
     ),
 
-    // Viimeinen pitkä nuoli
     Arrow(
       row: 5,
-      column: 1,
+      column: 0,
       direction: ArrowDirection.right,
       length: 2,
     ),
