@@ -161,10 +161,21 @@ class _GameScreenState extends State<GameScreen> {
       barrierDismissible: false,
       builder: (context) {
         return GameOverDialog(
-          onTryAgain: _restartGame,
+          onTryAgain: _restartCurrentLevel,
         );
       },
     );
+  }
+
+  void _restartCurrentLevel() {
+    setState(() {
+      board.reset();
+      moves = 0;
+      lives = 3;
+      exitingArrow = null;
+      failedArrow = null;
+      isAnimating = false;
+    });
   }
 
   void _restartGame() {
