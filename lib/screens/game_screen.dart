@@ -283,7 +283,7 @@ class _GameScreenState extends State<GameScreen> {
         ),
         if (exitingArrow != null)
           _buildExitAnimation(
-            exitingArrow,
+            exitingArrow!,
             cellSize,
             spacing,
             padding,
