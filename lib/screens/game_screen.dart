@@ -394,7 +394,7 @@ class _GameScreenState extends State<GameScreen> {
               end: 1,
             ),
             duration: const Duration(
-              milliseconds: 900,
+              milliseconds: 700,
             ),
             curve: Curves.easeInOut,
             onEnd: () => _finishExit(arrow),
@@ -408,6 +408,7 @@ class _GameScreenState extends State<GameScreen> {
                 progress: value,
                 cellSize: cellSize,
                 spacing: spacing,
+                boardSize: board.size,
                 color: Colors.green,
               );
             },
