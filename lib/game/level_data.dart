@@ -112,7 +112,7 @@ const List<LevelData> levels = [
       Arrow(
         row: 2,
         column: 3,
-        direction: ArrowDirection.up,
+        direction: ArrowDirection.right,
       ),
       Arrow(
         row: 2,
