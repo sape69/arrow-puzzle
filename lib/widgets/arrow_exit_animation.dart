@@ -57,61 +57,62 @@ class _SnakeArrowPainter extends CustomPainter {
     Canvas canvas,
     Size size,
   ) {
-    final path = _createPath();
+    final points = _createPath();
 
-    if (path.length < 2) {
-      _drawArrow(
+    if (points.length < 2) {
+      _drawSingleArrow(
         canvas,
-        path.isEmpty
+        points.isEmpty
             ? Offset(
                 size.width / 2,
                 size.height / 2,
               )
-            : path.first.position,
+            : points.first.position,
         arrow.direction,
       );
       return;
     }
 
-    final snakeLength = _snakeLength(path);
+    final totalLength = _pathLength(points);
 
-    final totalLength = _pathLength(path);
+    final snakeLength = math.max(
+      cellSize,
+      arrow.segmentCount * step,
+    );
 
     final exitDistance =
         math.max(size.width, size.height) +
         step * 2;
 
-    final travel =
+    final headDistance =
+        totalLength +
         exitDistance * progress;
 
-    final startDistance = travel;
-    final endDistance =
-        travel + snakeLength;
+    final tailDistance =
+        headDistance - snakeLength;
 
     final visiblePath = _extractPath(
-      path,
-      startDistance,
-      endDistance,
+      points,
+      tailDistance,
+      headDistance,
     );
 
     if (visiblePath.length < 2) {
       return;
     }
 
-    _drawSnake(
+    _drawSmoothSnake(
       canvas,
       visiblePath,
     );
 
-    if (endDistance >= totalLength) {
-      final head = visiblePath.last;
+    final head = visiblePath.last;
 
-      _drawArrowHead(
-        canvas,
-        head.position,
-        head.direction,
-      );
-    }
+    _drawArrowHead(
+      canvas,
+      head.position,
+      head.direction,
+    );
   }
 
   List<_PathPoint> _createPath() {
@@ -153,7 +154,7 @@ class _SnakeArrowPainter extends CustomPainter {
       return points;
     }
 
-    for (var i = 0; i < arrow.length + 3; i++) {
+    for (var i = 0; i < arrow.length + 4; i++) {
       final offset = _directionOffset(
         arrow.direction,
         step,
@@ -194,58 +195,44 @@ class _SnakeArrowPainter extends CustomPainter {
     }
   }
 
-  double _snakeLength(
-    List<_PathPoint> path,
-  ) {
-    if (arrow.isBent) {
-      return math.max(
-        step,
-        (arrow.segmentCount) * step,
-      );
-    }
-
-    return math.max(
-      step,
-      arrow.length * step,
-    );
-  }
-
   List<_PathPoint> _extractPath(
-    List<_PathPoint> path,
+    List<_PathPoint> points,
     double start,
     double end,
   ) {
-    final total = _pathLength(path);
+    final total = _pathLength(points);
 
     if (start >= total) {
       return [];
     }
 
-    final actualStart =
-        start.clamp(0.0, total);
+    final actualStart = start.clamp(
+      0.0,
+      total,
+    );
 
-    final actualEnd =
-        end.clamp(0.0, total);
+    final actualEnd = end.clamp(
+      0.0,
+      total,
+    );
 
     if (actualEnd <= actualStart) {
       return [];
     }
 
-    final result = <_PathPoint>[];
-
-    result.add(
+    final result = <_PathPoint>[
       _pointAtDistance(
-        path,
+        points,
         actualStart,
       ),
-    );
+    ];
 
     var distance = 0.0;
 
-    for (var i = 1; i < path.length; i++) {
+    for (var i = 1; i < points.length; i++) {
       final segmentLength =
-          (path[i].position -
-                  path[i - 1].position)
+          (points[i].position -
+                  points[i - 1].position)
               .distance;
 
       final nextDistance =
@@ -253,7 +240,7 @@ class _SnakeArrowPainter extends CustomPainter {
 
       if (nextDistance > actualStart &&
           nextDistance < actualEnd) {
-        result.add(path[i]);
+        result.add(points[i]);
       }
 
       distance = nextDistance;
@@ -261,7 +248,7 @@ class _SnakeArrowPainter extends CustomPainter {
 
     result.add(
       _pointAtDistance(
-        path,
+        points,
         actualEnd,
       ),
     );
@@ -270,24 +257,24 @@ class _SnakeArrowPainter extends CustomPainter {
   }
 
   _PathPoint _pointAtDistance(
-    List<_PathPoint> path,
+    List<_PathPoint> points,
     double distance,
   ) {
     if (distance <= 0) {
-      return path.first;
+      return points.first;
     }
 
-    final total = _pathLength(path);
+    final total = _pathLength(points);
 
     if (distance >= total) {
-      return path.last;
+      return points.last;
     }
 
     var travelled = 0.0;
 
-    for (var i = 1; i < path.length; i++) {
-      final start = path[i - 1];
-      final end = path[i];
+    for (var i = 1; i < points.length; i++) {
+      final start = points[i - 1];
+      final end = points[i];
 
       final segmentLength =
           (end.position -
@@ -313,28 +300,32 @@ class _SnakeArrowPainter extends CustomPainter {
       travelled += segmentLength;
     }
 
-    return path.last;
+    return points.last;
   }
 
   double _pathLength(
-    List<_PathPoint> path,
+    List<_PathPoint> points,
   ) {
     var length = 0.0;
 
-    for (var i = 1; i < path.length; i++) {
+    for (var i = 1; i < points.length; i++) {
       length +=
-          (path[i].position -
-                  path[i - 1].position)
+          (points[i].position -
+                  points[i - 1].position)
               .distance;
     }
 
     return length;
   }
 
-  void _drawSnake(
+  void _drawSmoothSnake(
     Canvas canvas,
     List<_PathPoint> points,
   ) {
+    if (points.length < 2) {
+      return;
+    }
+
     final paint = Paint()
       ..color = color
       ..strokeWidth =
@@ -353,10 +344,42 @@ class _SnakeArrowPainter extends CustomPainter {
       points.first.position.dy,
     );
 
-    for (var i = 1; i < points.length; i++) {
+    if (points.length == 2) {
       path.lineTo(
-        points[i].position.dx,
-        points[i].position.dy,
+        points.last.position.dx,
+        points.last.position.dy,
+      );
+    } else {
+      for (var i = 1; i < points.length - 1; i++) {
+        final current = points[i];
+        final next = points[i + 1];
+
+        final midpoint = Offset(
+          (current.position.dx +
+                  next.position.dx) /
+              2,
+          (current.position.dy +
+                  next.position.dy) /
+              2,
+        );
+
+        path.quadraticBezierTo(
+          current.position.dx,
+          current.position.dy,
+          midpoint.dx,
+          midpoint.dy,
+        );
+      }
+
+      final secondLast =
+          points[points.length - 2];
+      final last = points.last;
+
+      path.quadraticBezierTo(
+        secondLast.position.dx,
+        secondLast.position.dy,
+        last.position.dx,
+        last.position.dy,
       );
     }
 
@@ -366,7 +389,7 @@ class _SnakeArrowPainter extends CustomPainter {
     );
   }
 
-  void _drawArrow(
+  void _drawSingleArrow(
     Canvas canvas,
     Offset center,
     ArrowDirection direction,
@@ -416,11 +439,10 @@ class _SnakeArrowPainter extends CustomPainter {
     Offset tip,
     ArrowDirection direction,
   ) {
-    final headSize =
-        math.min(
-          cellSize * 0.30,
-          15.0,
-        );
+    final headSize = math.min(
+      cellSize * 0.30,
+      15.0,
+    );
 
     final side =
         _perpendicular(direction);
