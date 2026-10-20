@@ -63,22 +63,18 @@ class _ArrowExitPainter extends CustomPainter {
       return;
     }
 
-    final occupiedLength = _pathLength(points);
+    final occupiedLength = _occupiedLength(points);
 
-    final exitDistance =
-        math.max(size.width, size.height) + step * 2;
+    final boardExitLength = step * 0.75;
+
+    final headDistance =
+        occupiedLength +
+        boardExitLength * progress;
 
     final snakeLength = math.max(
       cellSize * 0.9,
-      (points.length - 1) * step,
+      occupiedLength,
     );
-
-    final headStart = occupiedLength;
-
-    final headEnd = occupiedLength + exitDistance;
-
-    final headDistance = headStart +
-        (headEnd - headStart) * progress;
 
     final tailDistance =
         headDistance - snakeLength;
@@ -156,7 +152,19 @@ class _ArrowExitPainter extends CustomPainter {
 
     final exitDirection = arrow.exitDirection;
 
-    for (var i = 0; i < 16; i++) {
+    final edgeDistance = _distanceToBoardEdge(
+      x,
+      y,
+      exitDirection,
+      size: null,
+    );
+
+    final exitSteps = math.max(
+      1,
+      (edgeDistance / step).ceil(),
+    );
+
+    for (var i = 0; i < exitSteps; i++) {
       final offset = _directionOffset(
         exitDirection,
         step,
@@ -174,6 +182,47 @@ class _ArrowExitPainter extends CustomPainter {
     }
 
     return points;
+  }
+
+  double _occupiedLength(
+    List<_PathPoint> points,
+  ) {
+    if (points.length < 2) {
+      return 0;
+    }
+
+    var length = 0.0;
+
+    final occupiedPoints = arrow.isBent
+        ? arrow.path.length + 1
+        : arrow.length;
+
+    final end =
+        math.min(
+          occupiedPoints,
+          points.length,
+        );
+
+    for (var i = 1; i < end; i++) {
+      length +=
+          (points[i].position -
+                  points[i - 1].position)
+              .distance;
+    }
+
+    return length;
+  }
+
+  double _distanceToBoardEdge(
+    double x,
+    double y,
+    ArrowDirection direction, {
+    required Size? size,
+  }) {
+    // The animation is positioned relative to the arrow's
+    // starting grid cell. The arrow only needs a short
+    // movement beyond its final cell before disappearing.
+    return step * 1.2;
   }
 
   List<_PathPoint> _visiblePoints(
