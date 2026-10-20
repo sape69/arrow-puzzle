@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../game/arrow.dart';
 import '../game/game_board.dart';
+import '../widgets/arrow_widget.dart';
 import '../widgets/game_hud.dart';
 import '../widgets/game_over_dialog.dart';
 
@@ -48,25 +49,28 @@ class _GameScreenState extends State<GameScreen> {
       isAnimating = true;
     });
 
-    Future.delayed(const Duration(milliseconds: 650), () {
-      if (!mounted) {
-        return;
-      }
+    Future.delayed(
+      const Duration(milliseconds: 650),
+      () {
+        if (!mounted) {
+          return;
+        }
 
-      if (lives <= 0) {
+        if (lives <= 0) {
+          setState(() {
+            isAnimating = false;
+          });
+
+          _showGameOverDialog();
+          return;
+        }
+
         setState(() {
+          failedArrow = null;
           isAnimating = false;
         });
-
-        _showGameOverDialog();
-        return;
-      }
-
-      setState(() {
-        failedArrow = null;
-        isAnimating = false;
-      });
-    });
+      },
+    );
   }
 
   void _finishExit(Arrow arrow) {
@@ -130,7 +134,9 @@ class _GameScreenState extends State<GameScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: const Text('All Levels Complete!'),
+          title: const Text(
+            'All Levels Complete!',
+          ),
           content: const Text(
             'Congratulations!\nYou completed every level.',
           ),
@@ -205,20 +211,24 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildBoard(BoxConstraints constraints) {
+  Widget _buildBoard(
+    BoxConstraints constraints,
+  ) {
     final boardWidth = constraints.maxWidth;
-    final padding = 16.0;
-    final spacing = 4.0;
+    const padding = 16.0;
+    const spacing = 4.0;
 
     final availableWidth =
-        boardWidth - (padding * 2) - (spacing * (board.size - 1));
+        boardWidth -
+        (padding * 2) -
+        (spacing * (board.size - 1));
 
     final cellSize = availableWidth / board.size;
 
     return Stack(
       children: [
         Padding(
-          padding: EdgeInsets.all(padding),
+          padding: const EdgeInsets.all(padding),
           child: GridView.builder(
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate:
@@ -232,7 +242,10 @@ class _GameScreenState extends State<GameScreen> {
               final row = index ~/ board.size;
               final column = index % board.size;
 
-              final arrow = board.arrowAt(row, column);
+              final arrow = board.arrowAt(
+                row,
+                column,
+              );
 
               return GestureDetector(
                 onTap: arrow == null
@@ -241,7 +254,8 @@ class _GameScreenState extends State<GameScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFF21113B),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius:
+                        BorderRadius.circular(8),
                   ),
                 ),
               );
@@ -265,20 +279,8 @@ class _GameScreenState extends State<GameScreen> {
     final widgets = <Widget>[];
 
     for (final arrow in board.arrows) {
-      if (exitingArrow == arrow || failedArrow == arrow) {
-        widgets.add(
-          _buildAnimatedArrow(
-            arrow,
-            cellSize,
-            spacing,
-            padding,
-          ),
-        );
-        continue;
-      }
-
       widgets.add(
-        _buildPositionedArrow(
+        _buildArrow(
           arrow,
           cellSize,
           spacing,
@@ -290,21 +292,26 @@ class _GameScreenState extends State<GameScreen> {
     return widgets;
   }
 
-  Widget _buildPositionedArrow(
+  Widget _buildArrow(
     Arrow arrow,
     double cellSize,
     double spacing,
     double padding,
   ) {
-    final width = arrow.direction == ArrowDirection.left ||
-            arrow.direction == ArrowDirection.right
-        ? _arrowLength(arrow, cellSize, spacing)
-        : cellSize;
+    final isExiting = exitingArrow == arrow;
+    final isFailed = failedArrow == arrow;
 
-    final height = arrow.direction == ArrowDirection.up ||
-            arrow.direction == ArrowDirection.down
-        ? _arrowLength(arrow, cellSize, spacing)
-        : cellSize;
+    final width = _arrowWidth(
+      arrow,
+      cellSize,
+      spacing,
+    );
+
+    final height = _arrowHeight(
+      arrow,
+      cellSize,
+      spacing,
+    );
 
     return Positioned(
       left: _arrowLeft(
@@ -323,164 +330,125 @@ class _GameScreenState extends State<GameScreen> {
       height: height,
       child: GestureDetector(
         onTap: () => _tapArrow(arrow),
-        child: Center(
-          child: _arrowVisual(
-            arrow,
-            Colors.white,
-            cellSize,
-          ),
-        ),
+        child: isFailed
+            ? _buildFailedArrow(
+                arrow,
+                cellSize,
+              )
+            : isExiting
+                ? _buildExitingArrow(
+                    arrow,
+                    cellSize,
+                    spacing,
+                  )
+                : _buildNormalArrow(
+                    arrow,
+                    cellSize,
+                  ),
       ),
     );
   }
 
-  Widget _buildAnimatedArrow(
+  Widget _buildNormalArrow(
     Arrow arrow,
     double cellSize,
-    double spacing,
-    double padding,
   ) {
-    final isFailed = failedArrow == arrow;
-
-    if (isFailed) {
-      return Positioned(
-        left: _arrowLeft(
-          arrow,
-          cellSize,
-          spacing,
-          padding,
-        ),
-        top: _arrowTop(
-          arrow,
-          cellSize,
-          spacing,
-          padding,
-        ),
-        width: _arrowWidth(arrow, cellSize, spacing),
-        height: _arrowHeight(arrow, cellSize, spacing),
-        child: TweenAnimationBuilder<double>(
-          key: ValueKey('failed-$arrow'),
-          tween: Tween(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 650),
-          curve: Curves.easeInOut,
-          builder: (context, value, child) {
-            final offset = _collisionOffset(
-              arrow,
-              value,
-              cellSize,
-              spacing,
-            );
-
-            return Transform.translate(
-              offset: offset,
-              child: child,
-            );
-          },
-          child: Center(
-            child: _arrowVisual(
-              arrow,
-              Colors.red,
-              cellSize,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Positioned(
-      left: _arrowLeft(
-        arrow,
-        cellSize,
-        spacing,
-        padding,
-      ),
-      top: _arrowTop(
-        arrow,
-        cellSize,
-        spacing,
-        padding,
-      ),
-      width: _arrowWidth(arrow, cellSize, spacing),
-      height: _arrowHeight(arrow, cellSize, spacing),
-      child: TweenAnimationBuilder<double>(
-        key: ValueKey(arrow),
-        tween: Tween(begin: 0, end: 1),
-        duration: const Duration(milliseconds: 450),
-        curve: Curves.easeOut,
-        onEnd: () => _finishExit(arrow),
-        builder: (context, value, child) {
-          final offset = _exitOffset(
-            arrow,
-            cellSize,
-            spacing,
-          );
-
-          return Opacity(
-            opacity: 1 - value,
-            child: Transform.translate(
-              offset: Offset(
-                offset.dx * value,
-                offset.dy * value,
-              ),
-              child: child,
-            ),
-          );
-        },
-        child: Center(
-          child: _arrowVisual(
-            arrow,
-            Colors.green,
-            cellSize,
-          ),
-        ),
+    return Center(
+      child: ArrowWidget(
+        arrow: arrow,
+        cellSize: cellSize,
       ),
     );
   }
 
-  Widget _arrowVisual(
+  Widget _buildFailedArrow(
     Arrow arrow,
-    Color color,
     double cellSize,
   ) {
-    final iconSize = math.min(cellSize * 0.55, 36.0);
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(
+        'failed-$arrow',
+      ),
+      tween: Tween(
+        begin: 0,
+        end: 1,
+      ),
+      duration: const Duration(
+        milliseconds: 650,
+      ),
+      curve: Curves.easeInOut,
+      builder: (
+        context,
+        value,
+        child,
+      ) {
+        final offset = _collisionOffset(
+          arrow,
+          value,
+          cellSize,
+        );
 
-    final icon = Icon(
-      Icons.arrow_forward,
-      size: iconSize,
-      color: color,
+        return Transform.translate(
+          offset: offset,
+          child: child,
+        );
+      },
+      child: Center(
+        child: ArrowWidget(
+          arrow: arrow,
+          cellSize: cellSize,
+          color: Colors.red,
+        ),
+      ),
     );
-
-    switch (arrow.direction) {
-      case ArrowDirection.right:
-        return icon;
-
-      case ArrowDirection.left:
-        return Transform.rotate(
-          angle: math.pi,
-          child: icon,
-        );
-
-      case ArrowDirection.up:
-        return Transform.rotate(
-          angle: -math.pi / 2,
-          child: icon,
-        );
-
-      case ArrowDirection.down:
-        return Transform.rotate(
-          angle: math.pi / 2,
-          child: icon,
-        );
-    }
   }
 
-  double _arrowLength(
+  Widget _buildExitingArrow(
     Arrow arrow,
     double cellSize,
     double spacing,
   ) {
-    return (arrow.length * cellSize) +
-        ((arrow.length - 1) * spacing);
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(arrow),
+      tween: Tween(
+        begin: 0,
+        end: 1,
+      ),
+      duration: const Duration(
+        milliseconds: 450,
+      ),
+      curve: Curves.easeOut,
+      onEnd: () => _finishExit(arrow),
+      builder: (
+        context,
+        value,
+        child,
+      ) {
+        final offset = _exitOffset(
+          arrow,
+          cellSize,
+          spacing,
+        );
+
+        return Opacity(
+          opacity: 1 - value,
+          child: Transform.translate(
+            offset: Offset(
+              offset.dx * value,
+              offset.dy * value,
+            ),
+            child: child,
+          ),
+        );
+      },
+      child: Center(
+        child: ArrowWidget(
+          arrow: arrow,
+          cellSize: cellSize,
+          color: Colors.green,
+        ),
+      ),
+    );
   }
 
   double _arrowWidth(
@@ -488,6 +456,14 @@ class _GameScreenState extends State<GameScreen> {
     double cellSize,
     double spacing,
   ) {
+    if (arrow.isBent) {
+      return _bentWidth(
+        arrow,
+        cellSize,
+        spacing,
+      );
+    }
+
     if (arrow.direction == ArrowDirection.left ||
         arrow.direction == ArrowDirection.right) {
       return _arrowLength(
@@ -505,6 +481,14 @@ class _GameScreenState extends State<GameScreen> {
     double cellSize,
     double spacing,
   ) {
+    if (arrow.isBent) {
+      return _bentHeight(
+        arrow,
+        cellSize,
+        spacing,
+      );
+    }
+
     if (arrow.direction == ArrowDirection.up ||
         arrow.direction == ArrowDirection.down) {
       return _arrowLength(
@@ -517,12 +501,104 @@ class _GameScreenState extends State<GameScreen> {
     return cellSize;
   }
 
+  double _arrowLength(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    return (arrow.length * cellSize) +
+        ((arrow.length - 1) * spacing);
+  }
+
+  double _bentWidth(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    var column = 0;
+    var minColumn = 0;
+    var maxColumn = 0;
+
+    for (final direction in arrow.path!) {
+      switch (direction) {
+        case ArrowDirection.left:
+          column--;
+          break;
+        case ArrowDirection.right:
+          column++;
+          break;
+        case ArrowDirection.up:
+        case ArrowDirection.down:
+          break;
+      }
+
+      minColumn = math.min(
+        minColumn,
+        column,
+      );
+      maxColumn = math.max(
+        maxColumn,
+        column,
+      );
+    }
+
+    return ((maxColumn - minColumn + 1) *
+            cellSize) +
+        ((maxColumn - minColumn) * spacing);
+  }
+
+  double _bentHeight(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    var row = 0;
+    var minRow = 0;
+    var maxRow = 0;
+
+    for (final direction in arrow.path!) {
+      switch (direction) {
+        case ArrowDirection.up:
+          row--;
+          break;
+        case ArrowDirection.down:
+          row++;
+          break;
+        case ArrowDirection.left:
+        case ArrowDirection.right:
+          break;
+      }
+
+      minRow = math.min(
+        minRow,
+        row,
+      );
+      maxRow = math.max(
+        maxRow,
+        row,
+      );
+    }
+
+    return ((maxRow - minRow + 1) *
+            cellSize) +
+        ((maxRow - minRow) * spacing);
+  }
+
   double _arrowLeft(
     Arrow arrow,
     double cellSize,
     double spacing,
     double padding,
   ) {
+    if (arrow.isBent) {
+      return _bentLeft(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      );
+    }
+
     if (arrow.direction == ArrowDirection.left) {
       return padding +
           (arrow.column - arrow.length + 1) *
@@ -530,7 +606,8 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     return padding +
-        arrow.column * (cellSize + spacing);
+        arrow.column *
+            (cellSize + spacing);
   }
 
   double _arrowTop(
@@ -539,6 +616,15 @@ class _GameScreenState extends State<GameScreen> {
     double spacing,
     double padding,
   ) {
+    if (arrow.isBent) {
+      return _bentTop(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      );
+    }
+
     if (arrow.direction == ArrowDirection.up) {
       return padding +
           (arrow.row - arrow.length + 1) *
@@ -546,34 +632,105 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     return padding +
-        arrow.row * (cellSize + spacing);
+        arrow.row *
+            (cellSize + spacing);
+  }
+
+  double _bentLeft(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    var column = 0;
+    var minColumn = 0;
+
+    for (final direction in arrow.path!) {
+      if (direction == ArrowDirection.left) {
+        column--;
+      } else if (direction == ArrowDirection.right) {
+        column++;
+      }
+
+      minColumn = math.min(
+        minColumn,
+        column,
+      );
+    }
+
+    return padding +
+        (arrow.column + minColumn) *
+            (cellSize + spacing);
+  }
+
+  double _bentTop(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    var row = 0;
+    var minRow = 0;
+
+    for (final direction in arrow.path!) {
+      if (direction == ArrowDirection.up) {
+        row--;
+      } else if (direction == ArrowDirection.down) {
+        row++;
+      }
+
+      minRow = math.min(
+        minRow,
+        row,
+      );
+    }
+
+    return padding +
+        (arrow.row + minRow) *
+            (cellSize + spacing);
   }
 
   Offset _collisionOffset(
     Arrow arrow,
     double value,
     double cellSize,
-    double spacing,
   ) {
     final collisionDistance =
-        math.min(24.0, cellSize * 0.45);
+        math.min(
+      24.0,
+      cellSize * 0.45,
+    );
 
     final movement = value <= 0.5
         ? value * 2 * collisionDistance
-        : (1 - value) * 2 * collisionDistance;
+        : (1 - value) *
+            2 *
+            collisionDistance;
 
     switch (arrow.direction) {
       case ArrowDirection.up:
-        return Offset(0, -movement);
+        return Offset(
+          0,
+          -movement,
+        );
 
       case ArrowDirection.right:
-        return Offset(movement, 0);
+        return Offset(
+          movement,
+          0,
+        );
 
       case ArrowDirection.down:
-        return Offset(0, movement);
+        return Offset(
+          0,
+          movement,
+        );
 
       case ArrowDirection.left:
-        return Offset(-movement, 0);
+        return Offset(
+          -movement,
+          0,
+        );
     }
   }
 
@@ -583,6 +740,58 @@ class _GameScreenState extends State<GameScreen> {
     double spacing,
   ) {
     final step = cellSize + spacing;
+
+    if (arrow.isBent) {
+      final path = arrow.path!;
+
+      var row = arrow.row;
+      var column = arrow.column;
+
+      for (final direction in path) {
+        switch (direction) {
+          case ArrowDirection.up:
+            row--;
+            break;
+          case ArrowDirection.right:
+            column++;
+            break;
+          case ArrowDirection.down:
+            row++;
+            break;
+          case ArrowDirection.left:
+            column--;
+            break;
+        }
+      }
+
+      final lastDirection = path.last;
+
+      switch (lastDirection) {
+        case ArrowDirection.up:
+          return Offset(
+            0,
+            -(row + 1) * step,
+          );
+
+        case ArrowDirection.right:
+          return Offset(
+            (board.size - column) * step,
+            0,
+          );
+
+        case ArrowDirection.down:
+          return Offset(
+            0,
+            (board.size - row) * step,
+          );
+
+        case ArrowDirection.left:
+          return Offset(
+            -(column + 1) * step,
+            0,
+          );
+      }
+    }
 
     switch (arrow.direction) {
       case ArrowDirection.up:
