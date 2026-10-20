@@ -26,7 +26,10 @@ class ArrowWidget extends StatelessWidget {
   }
 
   Widget _buildStraightArrow() {
-    final iconSize = math.min(cellSize * 0.55, 36.0);
+    final iconSize = math.min(
+      cellSize * 0.55,
+      36.0,
+    );
 
     final icon = Icon(
       Icons.arrow_forward,
@@ -59,7 +62,7 @@ class ArrowWidget extends StatelessWidget {
   }
 
   Widget _buildBentArrow() {
-    final directions = arrow.path!;
+    final directions = arrow.path;
 
     return CustomPaint(
       painter: _BentArrowPainter(
@@ -88,6 +91,10 @@ class _BentArrowPainter extends CustomPainter {
     Canvas canvas,
     Size size,
   ) {
+    if (directions.isEmpty) {
+      return;
+    }
+
     final center = Offset(
       size.width / 2,
       size.height / 2,
