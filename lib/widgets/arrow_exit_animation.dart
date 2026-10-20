@@ -23,7 +23,7 @@ class ArrowExitAnimation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _ArrowPathPainter(
+      painter: _ArrowExitPainter(
         arrow: arrow,
         progress: progress,
         cellSize: cellSize,
@@ -35,8 +35,8 @@ class ArrowExitAnimation extends StatelessWidget {
   }
 }
 
-class _ArrowPathPainter extends CustomPainter {
-  const _ArrowPathPainter({
+class _ArrowExitPainter extends CustomPainter {
+  const _ArrowExitPainter({
     required this.arrow,
     required this.progress,
     required this.cellSize,
@@ -57,53 +57,55 @@ class _ArrowPathPainter extends CustomPainter {
     Canvas canvas,
     Size size,
   ) {
-    final points = _buildPoints();
+    final points = _buildPath();
 
     if (points.length < 2) {
       return;
     }
 
-    final totalLength = _pathLength(points);
+    final occupiedLength = _pathLength(points);
+
+    final exitDistance =
+        math.max(size.width, size.height) + step * 2;
 
     final snakeLength = math.max(
-      cellSize * 0.8,
-      arrow.segmentCount * step,
+      cellSize * 0.9,
+      (points.length - 1) * step,
     );
 
-    final exitLength =
-        math.max(size.width, size.height) +
-        step * 3;
+    final headStart = occupiedLength;
 
-    final headDistance =
-        totalLength +
-        exitLength * progress;
+    final headEnd = occupiedLength + exitDistance;
+
+    final headDistance = headStart +
+        (headEnd - headStart) * progress;
 
     final tailDistance =
         headDistance - snakeLength;
 
-    final visible = _visiblePoints(
+    final visiblePoints = _visiblePoints(
       points,
       tailDistance,
       headDistance,
     );
 
-    if (visible.length < 2) {
+    if (visiblePoints.length < 2) {
       return;
     }
 
     _drawSnake(
       canvas,
-      visible,
+      visiblePoints,
     );
 
     _drawHead(
       canvas,
-      visible.last.position,
-      visible.last.direction,
+      visiblePoints.last.position,
+      visiblePoints.last.direction,
     );
   }
 
-  List<_PathPoint> _buildPoints() {
+  List<_PathPoint> _buildPath() {
     final points = <_PathPoint>[];
 
     var x = cellSize / 2;
@@ -118,7 +120,7 @@ class _ArrowPathPainter extends CustomPainter {
 
     if (arrow.isBent) {
       for (final direction in arrow.path) {
-        final offset = _offset(
+        final offset = _directionOffset(
           direction,
           step,
         );
@@ -133,12 +135,10 @@ class _ArrowPathPainter extends CustomPainter {
           ),
         );
       }
-
-      final exitDirection = arrow.exitDirection;
-
-      for (var i = 0; i < 16; i++) {
-        final offset = _offset(
-          exitDirection,
+    } else {
+      for (var i = 1; i < arrow.length; i++) {
+        final offset = _directionOffset(
+          arrow.direction,
           step,
         );
 
@@ -148,17 +148,17 @@ class _ArrowPathPainter extends CustomPainter {
         points.add(
           _PathPoint(
             position: Offset(x, y),
-            direction: exitDirection,
+            direction: arrow.direction,
           ),
         );
       }
-
-      return points;
     }
 
-    for (var i = 0; i < arrow.length + 16; i++) {
-      final offset = _offset(
-        arrow.direction,
+    final exitDirection = arrow.exitDirection;
+
+    for (var i = 0; i < 16; i++) {
+      final offset = _directionOffset(
+        exitDirection,
         step,
       );
 
@@ -168,7 +168,7 @@ class _ArrowPathPainter extends CustomPainter {
       points.add(
         _PathPoint(
           position: Offset(x, y),
-          direction: arrow.direction,
+          direction: exitDirection,
         ),
       );
     }
@@ -181,16 +181,16 @@ class _ArrowPathPainter extends CustomPainter {
     double start,
     double end,
   ) {
-    final total = _pathLength(points);
+    final totalLength = _pathLength(points);
 
     final actualStart = start.clamp(
       0.0,
-      total,
+      totalLength,
     );
 
     final actualEnd = end.clamp(
       0.0,
-      total,
+      totalLength,
     );
 
     if (actualEnd <= actualStart) {
@@ -207,13 +207,13 @@ class _ArrowPathPainter extends CustomPainter {
     var distance = 0.0;
 
     for (var i = 1; i < points.length; i++) {
-      final segment =
+      final segmentLength =
           (points[i].position -
                   points[i - 1].position)
               .distance;
 
       final nextDistance =
-          distance + segment;
+          distance + segmentLength;
 
       if (nextDistance > actualStart &&
           nextDistance < actualEnd) {
@@ -241,9 +241,9 @@ class _ArrowPathPainter extends CustomPainter {
       return points.first;
     }
 
-    final total = _pathLength(points);
+    final totalLength = _pathLength(points);
 
-    if (distance >= total) {
+    if (distance >= totalLength) {
       return points.last;
     }
 
@@ -253,15 +253,15 @@ class _ArrowPathPainter extends CustomPainter {
       final start = points[i - 1];
       final end = points[i];
 
-      final segment =
+      final segmentLength =
           (end.position -
                   start.position)
               .distance;
 
-      if (travelled + segment >= distance) {
+      if (travelled + segmentLength >= distance) {
         final amount =
             (distance - travelled) /
-                segment;
+                segmentLength;
 
         return _PathPoint(
           position: Offset.lerp(
@@ -273,7 +273,7 @@ class _ArrowPathPainter extends CustomPainter {
         );
       }
 
-      travelled += segment;
+      travelled += segmentLength;
     }
 
     return points.last;
@@ -301,8 +301,8 @@ class _ArrowPathPainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..strokeWidth = math.max(
-        6.0,
-        cellSize * 0.16,
+        7.0,
+        cellSize * 0.18,
       )
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
@@ -333,28 +333,22 @@ class _ArrowPathPainter extends CustomPainter {
     Offset tip,
     ArrowDirection direction,
   ) {
-    final size = math.min(
-      cellSize * 0.34,
-      17.0,
+    final headSize = math.min(
+      cellSize * 0.32,
+      18.0,
     );
 
     final side = _perpendicular(
       direction,
     );
 
-    final left =
-        tip -
-        _offset(
-          side,
-          size,
-        );
+    final sideOffset = _directionOffset(
+      side,
+      headSize,
+    );
 
-    final right =
-        tip +
-        _offset(
-          side,
-          size,
-        );
+    final left = tip - sideOffset;
+    final right = tip + sideOffset;
 
     final head = Path()
       ..moveTo(
@@ -379,22 +373,34 @@ class _ArrowPathPainter extends CustomPainter {
     );
   }
 
-  Offset _offset(
+  Offset _directionOffset(
     ArrowDirection direction,
     double distance,
   ) {
     switch (direction) {
       case ArrowDirection.up:
-        return Offset(0, -distance);
+        return Offset(
+          0,
+          -distance,
+        );
 
       case ArrowDirection.right:
-        return Offset(distance, 0);
+        return Offset(
+          distance,
+          0,
+        );
 
       case ArrowDirection.down:
-        return Offset(0, distance);
+        return Offset(
+          0,
+          distance,
+        );
 
       case ArrowDirection.left:
-        return Offset(-distance, 0);
+        return Offset(
+          -distance,
+          0,
+        );
     }
   }
 
@@ -414,7 +420,7 @@ class _ArrowPathPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(
-    _ArrowPathPainter oldDelegate,
+    _ArrowExitPainter oldDelegate,
   ) {
     return oldDelegate.progress != progress ||
         oldDelegate.arrow != arrow ||
