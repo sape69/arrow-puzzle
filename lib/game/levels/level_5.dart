@@ -1,17 +1,17 @@
 import '../arrow.dart';
 import '../level_data.dart';
 
-const level5 = LevelData(
+final level5 = LevelData(
   size: 8,
   arrows: [
     // Yläreuna
-    Arrow(
+    const Arrow(
       row: 0,
       column: 0,
       direction: ArrowDirection.right,
       length: 3,
     ),
-    Arrow(
+    const Arrow(
       row: 0,
       column: 5,
       direction: ArrowDirection.down,
@@ -19,13 +19,13 @@ const level5 = LevelData(
     ),
 
     // Vasen reuna
-    Arrow(
+    const Arrow(
       row: 2,
       column: 0,
       direction: ArrowDirection.down,
       length: 3,
     ),
-    Arrow(
+    const Arrow(
       row: 6,
       column: 0,
       direction: ArrowDirection.right,
@@ -33,7 +33,7 @@ const level5 = LevelData(
     ),
 
     // Pitkä keskialueen nuoli
-    Arrow(
+    const Arrow(
       row: 3,
       column: 2,
       direction: ArrowDirection.right,
@@ -77,7 +77,7 @@ const level5 = LevelData(
     ),
 
     // Alareunan pitkä nuoli
-    Arrow(
+    const Arrow(
       row: 7,
       column: 2,
       direction: ArrowDirection.right,
@@ -85,13 +85,13 @@ const level5 = LevelData(
     ),
 
     // Oikea reuna
-    Arrow(
+    const Arrow(
       row: 4,
       column: 7,
       direction: ArrowDirection.up,
       length: 3,
     ),
-    Arrow(
+    const Arrow(
       row: 7,
       column: 7,
       direction: ArrowDirection.up,
@@ -99,7 +99,7 @@ const level5 = LevelData(
     ),
 
     // Viimeinen pitkä nuoli
-    Arrow(
+    const Arrow(
       row: 5,
       column: 1,
       direction: ArrowDirection.right,
