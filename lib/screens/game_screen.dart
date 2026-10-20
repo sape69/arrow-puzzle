@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../game/arrow.dart';
@@ -98,7 +100,9 @@ class _GameScreenState extends State<GameScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: Text('Level ${board.currentLevel} Complete!'),
+          title: Text(
+            'Level ${board.currentLevel} Complete!',
+          ),
           content: Text(
             'Get ready for Level ${board.currentLevel + 1}.',
           ),
@@ -172,7 +176,9 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('ARROW PUZZLE • LEVEL ${board.currentLevel + 1}'),
+        title: Text(
+          'ARROW PUZZLE • LEVEL ${board.currentLevel + 1}',
+        ),
         centerTitle: true,
       ),
       body: Column(
@@ -186,38 +192,9 @@ class _GameScreenState extends State<GameScreen> {
             child: Center(
               child: AspectRatio(
                 aspectRatio: 1,
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                      SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: board.size,
-                    crossAxisSpacing: 4,
-                    mainAxisSpacing: 4,
-                  ),
-                  itemCount: board.size * board.size,
-                  itemBuilder: (context, index) {
-                    final row = index ~/ board.size;
-                    final column = index % board.size;
-
-                    final arrow = board.arrowAt(row, column);
-
-                    return GestureDetector(
-                      onTap: arrow == null
-                          ? null
-                          : () => _tapArrow(arrow),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF21113B),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: arrow == null
-                              ? null
-                              : _buildArrow(arrow),
-                        ),
-                      ),
-                    );
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return _buildBoard(constraints);
                   },
                 ),
               ),
@@ -228,79 +205,358 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildArrow(Arrow arrow) {
-    final isExiting = exitingArrow == arrow;
-    final isFailed = failedArrow == arrow;
+  Widget _buildBoard(BoxConstraints constraints) {
+    final boardWidth = constraints.maxWidth;
+    final padding = 16.0;
+    final spacing = 4.0;
 
-    if (isFailed) {
-      return TweenAnimationBuilder<double>(
-        key: ValueKey('failed-$arrow'),
-        tween: Tween(begin: 0, end: 1),
-        duration: const Duration(milliseconds: 650),
-        curve: Curves.easeInOut,
-        builder: (context, value, child) {
-          final offset = _collisionOffset(arrow, value);
+    final availableWidth =
+        boardWidth - (padding * 2) - (spacing * (board.size - 1));
 
-          return Transform.translate(
-            offset: offset,
-            child: child,
-          );
-        },
-        child: Text(
-          _arrowSymbol(arrow.direction),
-          style: const TextStyle(
-            fontSize: 30,
-            color: Colors.red,
-            fontWeight: FontWeight.bold,
+    final cellSize = availableWidth / board.size;
+
+    return Stack(
+      children: [
+        Padding(
+          padding: EdgeInsets.all(padding),
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate:
+                SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: board.size,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+            ),
+            itemCount: board.size * board.size,
+            itemBuilder: (context, index) {
+              final row = index ~/ board.size;
+              final column = index % board.size;
+
+              final arrow = board.arrowAt(row, column);
+
+              return GestureDetector(
+                onTap: arrow == null
+                    ? null
+                    : () => _tapArrow(arrow),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF21113B),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              );
+            },
           ),
         ),
-      );
-    }
-
-    if (!isExiting) {
-      return Text(
-        _arrowSymbol(arrow.direction),
-        style: const TextStyle(
-          fontSize: 30,
-          color: Color(0xFFF8F1DF),
-          fontWeight: FontWeight.bold,
+        ..._buildArrowWidgets(
+          cellSize,
+          spacing,
+          padding,
         ),
-      );
-    }
+      ],
+    );
+  }
 
-    return TweenAnimationBuilder<double>(
-      key: ValueKey(arrow),
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 450),
-      curve: Curves.easeOut,
-      onEnd: () => _finishExit(arrow),
-      builder: (context, value, child) {
-        final offset = _exitOffset(arrow);
+  List<Widget> _buildArrowWidgets(
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    final widgets = <Widget>[];
 
-        return Opacity(
-          opacity: 1 - value,
-          child: Transform.translate(
-            offset: Offset(
-              offset.dx * value,
-              offset.dy * value,
-            ),
-            child: child,
+    for (final arrow in board.arrows) {
+      if (exitingArrow == arrow || failedArrow == arrow) {
+        widgets.add(
+          _buildAnimatedArrow(
+            arrow,
+            cellSize,
+            spacing,
+            padding,
           ),
         );
-      },
-      child: Text(
-        _arrowSymbol(arrow.direction),
-        style: const TextStyle(
-          fontSize: 30,
-          color: Colors.green,
-          fontWeight: FontWeight.bold,
+        continue;
+      }
+
+      widgets.add(
+        _buildPositionedArrow(
+          arrow,
+          cellSize,
+          spacing,
+          padding,
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
+  Widget _buildPositionedArrow(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    final width = arrow.direction == ArrowDirection.left ||
+            arrow.direction == ArrowDirection.right
+        ? _arrowLength(arrow, cellSize, spacing)
+        : cellSize;
+
+    final height = arrow.direction == ArrowDirection.up ||
+            arrow.direction == ArrowDirection.down
+        ? _arrowLength(arrow, cellSize, spacing)
+        : cellSize;
+
+    return Positioned(
+      left: _arrowLeft(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      ),
+      top: _arrowTop(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      ),
+      width: width,
+      height: height,
+      child: GestureDetector(
+        onTap: () => _tapArrow(arrow),
+        child: Center(
+          child: _arrowVisual(
+            arrow,
+            Colors.white,
+            cellSize,
+          ),
         ),
       ),
     );
   }
 
-  Offset _collisionOffset(Arrow arrow, double value) {
-    const collisionDistance = 24.0;
+  Widget _buildAnimatedArrow(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    final isFailed = failedArrow == arrow;
+
+    if (isFailed) {
+      return Positioned(
+        left: _arrowLeft(
+          arrow,
+          cellSize,
+          spacing,
+          padding,
+        ),
+        top: _arrowTop(
+          arrow,
+          cellSize,
+          spacing,
+          padding,
+        ),
+        width: _arrowWidth(arrow, cellSize, spacing),
+        height: _arrowHeight(arrow, cellSize, spacing),
+        child: TweenAnimationBuilder<double>(
+          key: ValueKey('failed-$arrow'),
+          tween: Tween(begin: 0, end: 1),
+          duration: const Duration(milliseconds: 650),
+          curve: Curves.easeInOut,
+          builder: (context, value, child) {
+            final offset = _collisionOffset(
+              arrow,
+              value,
+              cellSize,
+              spacing,
+            );
+
+            return Transform.translate(
+              offset: offset,
+              child: child,
+            );
+          },
+          child: Center(
+            child: _arrowVisual(
+              arrow,
+              Colors.red,
+              cellSize,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Positioned(
+      left: _arrowLeft(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      ),
+      top: _arrowTop(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      ),
+      width: _arrowWidth(arrow, cellSize, spacing),
+      height: _arrowHeight(arrow, cellSize, spacing),
+      child: TweenAnimationBuilder<double>(
+        key: ValueKey(arrow),
+        tween: Tween(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOut,
+        onEnd: () => _finishExit(arrow),
+        builder: (context, value, child) {
+          final offset = _exitOffset(
+            arrow,
+            cellSize,
+            spacing,
+          );
+
+          return Opacity(
+            opacity: 1 - value,
+            child: Transform.translate(
+              offset: Offset(
+                offset.dx * value,
+                offset.dy * value,
+              ),
+              child: child,
+            ),
+          );
+        },
+        child: Center(
+          child: _arrowVisual(
+            arrow,
+            Colors.green,
+            cellSize,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _arrowVisual(
+    Arrow arrow,
+    Color color,
+    double cellSize,
+  ) {
+    final iconSize = math.min(cellSize * 0.55, 36.0);
+
+    final icon = Icon(
+      Icons.arrow_forward,
+      size: iconSize,
+      color: color,
+    );
+
+    switch (arrow.direction) {
+      case ArrowDirection.right:
+        return icon;
+
+      case ArrowDirection.left:
+        return Transform.rotate(
+          angle: math.pi,
+          child: icon,
+        );
+
+      case ArrowDirection.up:
+        return Transform.rotate(
+          angle: -math.pi / 2,
+          child: icon,
+        );
+
+      case ArrowDirection.down:
+        return Transform.rotate(
+          angle: math.pi / 2,
+          child: icon,
+        );
+    }
+  }
+
+  double _arrowLength(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    return (arrow.length * cellSize) +
+        ((arrow.length - 1) * spacing);
+  }
+
+  double _arrowWidth(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    if (arrow.direction == ArrowDirection.left ||
+        arrow.direction == ArrowDirection.right) {
+      return _arrowLength(
+        arrow,
+        cellSize,
+        spacing,
+      );
+    }
+
+    return cellSize;
+  }
+
+  double _arrowHeight(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    if (arrow.direction == ArrowDirection.up ||
+        arrow.direction == ArrowDirection.down) {
+      return _arrowLength(
+        arrow,
+        cellSize,
+        spacing,
+      );
+    }
+
+    return cellSize;
+  }
+
+  double _arrowLeft(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    if (arrow.direction == ArrowDirection.left) {
+      return padding +
+          (arrow.column - arrow.length + 1) *
+              (cellSize + spacing);
+    }
+
+    return padding +
+        arrow.column * (cellSize + spacing);
+  }
+
+  double _arrowTop(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    if (arrow.direction == ArrowDirection.up) {
+      return padding +
+          (arrow.row - arrow.length + 1) *
+              (cellSize + spacing);
+    }
+
+    return padding +
+        arrow.row * (cellSize + spacing);
+  }
+
+  Offset _collisionOffset(
+    Arrow arrow,
+    double value,
+    double cellSize,
+    double spacing,
+  ) {
+    final collisionDistance =
+        math.min(24.0, cellSize * 0.45);
 
     final movement = value <= 0.5
         ? value * 2 * collisionDistance
@@ -309,46 +565,49 @@ class _GameScreenState extends State<GameScreen> {
     switch (arrow.direction) {
       case ArrowDirection.up:
         return Offset(0, -movement);
+
       case ArrowDirection.right:
         return Offset(movement, 0);
+
       case ArrowDirection.down:
         return Offset(0, movement);
+
       case ArrowDirection.left:
         return Offset(-movement, 0);
     }
   }
 
-  Offset _exitOffset(Arrow arrow) {
-    const cellSize = 56.0;
+  Offset _exitOffset(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    final step = cellSize + spacing;
 
     switch (arrow.direction) {
       case ArrowDirection.up:
-        return Offset(0, -(arrow.row + 1) * cellSize);
-      case ArrowDirection.right:
-        return Offset(
-          (board.size - arrow.column) * cellSize,
-          0,
-        );
-      case ArrowDirection.down:
         return Offset(
           0,
-          (board.size - arrow.row) * cellSize,
+          -(arrow.row + arrow.length) * step,
         );
-      case ArrowDirection.left:
-        return Offset(-(arrow.column + 1) * cellSize, 0);
-    }
-  }
 
-  String _arrowSymbol(ArrowDirection direction) {
-    switch (direction) {
-      case ArrowDirection.up:
-        return '↑';
       case ArrowDirection.right:
-        return '→';
+        return Offset(
+          (board.size - arrow.column) * step,
+          0,
+        );
+
       case ArrowDirection.down:
-        return '↓';
+        return Offset(
+          0,
+          (board.size - arrow.row) * step,
+        );
+
       case ArrowDirection.left:
-        return '←';
+        return Offset(
+          -(arrow.column + 1) * step,
+          0,
+        );
     }
   }
 }
