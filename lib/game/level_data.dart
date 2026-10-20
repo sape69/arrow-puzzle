@@ -14,9 +14,9 @@ class LevelData {
   final int size;
 }
 
-const List<LevelData> levels = [
+final List<LevelData> levels = [
   // LEVEL 1 — 7 × 7
-  LevelData(
+  const LevelData(
     size: 7,
     arrows: [
       Arrow(
