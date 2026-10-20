@@ -98,30 +98,42 @@ class GameBoard {
   }
 
   bool canExit(Arrow arrow) {
+    final tip = _arrowTip(arrow);
+
+    return _clearToEdge(
+      arrow,
+      tip.row,
+      tip.column,
+      tip.direction,
+    );
+  }
+
+  _ArrowTip _arrowTip(Arrow arrow) {
     var row = arrow.row;
     var column = arrow.column;
+    var direction = arrow.direction;
 
     if (arrow.isBent) {
-      for (final direction in arrow.path!) {
+      for (final pathDirection in arrow.path!) {
         final next = _move(
           row,
           column,
-          direction,
+          pathDirection,
         );
 
         row = next.row;
         column = next.column;
+        direction = pathDirection;
       }
 
-      return _canReachEdge(
-        arrow,
-        row,
-        column,
-        arrow.path!.last,
+      return _ArrowTip(
+        row: row,
+        column: column,
+        direction: direction,
       );
     }
 
-    for (var i = 0; i < arrow.length; i++) {
+    for (var i = 1; i < arrow.length; i++) {
       final next = _move(
         row,
         column,
@@ -132,46 +144,48 @@ class GameBoard {
       column = next.column;
     }
 
-    return _canReachEdge(
-      arrow,
-      row,
-      column,
-      arrow.direction,
+    return _ArrowTip(
+      row: row,
+      column: column,
+      direction: arrow.direction,
     );
   }
 
-  bool _canReachEdge(
+  bool _clearToEdge(
     Arrow arrow,
     int row,
     int column,
     ArrowDirection direction,
   ) {
+    var currentRow = row;
+    var currentColumn = column;
+
     while (true) {
-      if (row < 0 ||
-          row >= size ||
-          column < 0 ||
-          column >= size) {
+      final next = _move(
+        currentRow,
+        currentColumn,
+        direction,
+      );
+
+      currentRow = next.row;
+      currentColumn = next.column;
+
+      if (currentRow < 0 ||
+          currentRow >= size ||
+          currentColumn < 0 ||
+          currentColumn >= size) {
         return true;
       }
 
       final blockingArrow = arrowAt(
-        row,
-        column,
+        currentRow,
+        currentColumn,
       );
 
       if (blockingArrow != null &&
           blockingArrow != arrow) {
         return false;
       }
-
-      final next = _move(
-        row,
-        column,
-        direction,
-      );
-
-      row = next.row;
-      column = next.column;
     }
   }
 
@@ -210,6 +224,18 @@ class GameBoard {
   void removeArrow(Arrow arrow) {
     arrows.remove(arrow);
   }
+}
+
+class _ArrowTip {
+  const _ArrowTip({
+    required this.row,
+    required this.column,
+    required this.direction,
+  });
+
+  final int row;
+  final int column;
+  final ArrowDirection direction;
 }
 
 class _GridPosition {
