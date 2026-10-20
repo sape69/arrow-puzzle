@@ -227,6 +227,7 @@ class _GameScreenState extends State<GameScreen> {
     BoxConstraints constraints,
   ) {
     final boardWidth = constraints.maxWidth;
+
     const padding = 16.0;
     const spacing = 4.0;
 
@@ -238,6 +239,7 @@ class _GameScreenState extends State<GameScreen> {
     final cellSize = availableWidth / board.size;
 
     return Stack(
+      clipBehavior: Clip.none,
       children: [
         Padding(
           padding: const EdgeInsets.all(padding),
@@ -274,11 +276,20 @@ class _GameScreenState extends State<GameScreen> {
             },
           ),
         ),
+
         ..._buildArrowWidgets(
           cellSize,
           spacing,
           padding,
         ),
+
+        if (exitingArrow != null)
+          _buildExitAnimation(
+            exitingArrow!,
+            cellSize,
+            spacing,
+            padding,
+          ),
       ],
     );
   }
@@ -291,6 +302,10 @@ class _GameScreenState extends State<GameScreen> {
     final widgets = <Widget>[];
 
     for (final arrow in board.arrows) {
+      if (arrow == exitingArrow) {
+        continue;
+      }
+
       widgets.add(
         _buildArrow(
           arrow,
@@ -310,7 +325,6 @@ class _GameScreenState extends State<GameScreen> {
     double spacing,
     double padding,
   ) {
-    final isExiting = exitingArrow == arrow;
     final isFailed = failedArrow == arrow;
 
     return Positioned(
@@ -342,16 +356,65 @@ class _GameScreenState extends State<GameScreen> {
                 arrow,
                 cellSize,
               )
-            : isExiting
-                ? _buildExitingArrow(
-                    arrow,
-                    cellSize,
-                    spacing,
-                  )
-                : _buildNormalArrow(
-                    arrow,
-                    cellSize,
-                  ),
+            : _buildNormalArrow(
+                arrow,
+                cellSize,
+              ),
+      ),
+    );
+  }
+
+  Widget _buildExitAnimation(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    final startX =
+        padding +
+        arrow.column *
+            (cellSize + spacing);
+
+    final startY =
+        padding +
+        arrow.row *
+            (cellSize + spacing);
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Transform.translate(
+          offset: Offset(
+            startX,
+            startY,
+          ),
+          child: TweenAnimationBuilder<double>(
+            key: ValueKey(
+              'exit-${arrow.hashCode}',
+            ),
+            tween: Tween(
+              begin: 0,
+              end: 1,
+            ),
+            duration: const Duration(
+              milliseconds: 900,
+            ),
+            curve: Curves.easeInOut,
+            onEnd: () => _finishExit(arrow),
+            builder: (
+              context,
+              value,
+              child,
+            ) {
+              return ArrowExitAnimation(
+                arrow: arrow,
+                progress: value,
+                cellSize: cellSize,
+                spacing: spacing,
+                color: Colors.green,
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -407,40 +470,6 @@ class _GameScreenState extends State<GameScreen> {
           color: Colors.red,
         ),
       ),
-    );
-  }
-
-  Widget _buildExitingArrow(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-  ) {
-    return TweenAnimationBuilder<double>(
-      key: ValueKey(
-        'exit-${arrow.hashCode}',
-      ),
-      tween: Tween(
-        begin: 0,
-        end: 1,
-      ),
-      duration: const Duration(
-        milliseconds: 700,
-      ),
-      curve: Curves.easeInOut,
-      onEnd: () => _finishExit(arrow),
-      builder: (
-        context,
-        value,
-        child,
-      ) {
-        return ArrowExitAnimation(
-          arrow: arrow,
-          progress: value,
-          cellSize: cellSize,
-          spacing: spacing,
-          color: Colors.green,
-        );
-      },
     );
   }
 
