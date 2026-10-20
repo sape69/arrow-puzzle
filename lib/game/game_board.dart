@@ -28,9 +28,16 @@ class GameBoard {
     return true;
   }
 
-  Arrow? arrowAt(int row, int column) {
+  Arrow? arrowAt(
+    int row,
+    int column,
+  ) {
     for (final arrow in arrows) {
-      if (_occupiesCell(arrow, row, column)) {
+      if (_occupiesCell(
+        arrow,
+        row,
+        column,
+      )) {
         return arrow;
       }
     }
@@ -46,28 +53,24 @@ class GameBoard {
     var currentRow = arrow.row;
     var currentColumn = arrow.column;
 
-    if (currentRow == row && currentColumn == column) {
+    if (currentRow == row &&
+        currentColumn == column) {
       return true;
     }
 
     if (!arrow.isBent) {
       for (var i = 1; i < arrow.length; i++) {
-        switch (arrow.direction) {
-          case ArrowDirection.up:
-            currentRow--;
-            break;
-          case ArrowDirection.right:
-            currentColumn++;
-            break;
-          case ArrowDirection.down:
-            currentRow++;
-            break;
-          case ArrowDirection.left:
-            currentColumn--;
-            break;
-        }
+        final next = _move(
+          currentRow,
+          currentColumn,
+          arrow.direction,
+        );
 
-        if (currentRow == row && currentColumn == column) {
+        currentRow = next.row;
+        currentColumn = next.column;
+
+        if (currentRow == row &&
+            currentColumn == column) {
           return true;
         }
       }
@@ -76,22 +79,17 @@ class GameBoard {
     }
 
     for (final direction in arrow.path!) {
-      switch (direction) {
-        case ArrowDirection.up:
-          currentRow--;
-          break;
-        case ArrowDirection.right:
-          currentColumn++;
-          break;
-        case ArrowDirection.down:
-          currentRow++;
-          break;
-        case ArrowDirection.left:
-          currentColumn--;
-          break;
-      }
+      final next = _move(
+        currentRow,
+        currentColumn,
+        direction,
+      );
 
-      if (currentRow == row && currentColumn == column) {
+      currentRow = next.row;
+      currentColumn = next.column;
+
+      if (currentRow == row &&
+          currentColumn == column) {
         return true;
       }
     }
@@ -105,23 +103,17 @@ class GameBoard {
 
     if (arrow.isBent) {
       for (final direction in arrow.path!) {
-        switch (direction) {
-          case ArrowDirection.up:
-            row--;
-            break;
-          case ArrowDirection.right:
-            column++;
-            break;
-          case ArrowDirection.down:
-            row++;
-            break;
-          case ArrowDirection.left:
-            column--;
-            break;
-        }
+        final next = _move(
+          row,
+          column,
+          direction,
+        );
+
+        row = next.row;
+        column = next.column;
       }
 
-      return _pathToExit(
+      return _canReachEdge(
         arrow,
         row,
         column,
@@ -129,22 +121,18 @@ class GameBoard {
       );
     }
 
-    switch (arrow.direction) {
-      case ArrowDirection.up:
-        row -= arrow.length;
-        break;
-      case ArrowDirection.right:
-        column += arrow.length;
-        break;
-      case ArrowDirection.down:
-        row += arrow.length;
-        break;
-      case ArrowDirection.left:
-        column -= arrow.length;
-        break;
+    for (var i = 0; i < arrow.length; i++) {
+      final next = _move(
+        row,
+        column,
+        arrow.direction,
+      );
+
+      row = next.row;
+      column = next.column;
     }
 
-    return _pathToExit(
+    return _canReachEdge(
       arrow,
       row,
       column,
@@ -152,7 +140,7 @@ class GameBoard {
     );
   }
 
-  bool _pathToExit(
+  bool _canReachEdge(
     Arrow arrow,
     int row,
     int column,
@@ -166,30 +154,70 @@ class GameBoard {
         return true;
       }
 
-      final blockingArrow = arrowAt(row, column);
+      final blockingArrow = arrowAt(
+        row,
+        column,
+      );
 
-      if (blockingArrow != null && blockingArrow != arrow) {
+      if (blockingArrow != null &&
+          blockingArrow != arrow) {
         return false;
       }
 
-      switch (direction) {
-        case ArrowDirection.up:
-          row--;
-          break;
-        case ArrowDirection.right:
-          column++;
-          break;
-        case ArrowDirection.down:
-          row++;
-          break;
-        case ArrowDirection.left:
-          column--;
-          break;
-      }
+      final next = _move(
+        row,
+        column,
+        direction,
+      );
+
+      row = next.row;
+      column = next.column;
+    }
+  }
+
+  _GridPosition _move(
+    int row,
+    int column,
+    ArrowDirection direction,
+  ) {
+    switch (direction) {
+      case ArrowDirection.up:
+        return _GridPosition(
+          row: row - 1,
+          column: column,
+        );
+
+      case ArrowDirection.right:
+        return _GridPosition(
+          row: row,
+          column: column + 1,
+        );
+
+      case ArrowDirection.down:
+        return _GridPosition(
+          row: row + 1,
+          column: column,
+        );
+
+      case ArrowDirection.left:
+        return _GridPosition(
+          row: row,
+          column: column - 1,
+        );
     }
   }
 
   void removeArrow(Arrow arrow) {
     arrows.remove(arrow);
   }
+}
+
+class _GridPosition {
+  const _GridPosition({
+    required this.row,
+    required this.column,
+  });
+
+  final int row;
+  final int column;
 }
