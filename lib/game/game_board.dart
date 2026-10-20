@@ -32,12 +32,44 @@ class GameBoard {
 
   Arrow? arrowAt(int row, int column) {
     for (final arrow in arrows) {
-      if (arrow.row == row && arrow.column == column) {
+      if (_occupiesCell(arrow, row, column)) {
         return arrow;
       }
     }
 
     return null;
+  }
+
+  bool _occupiesCell(
+    Arrow arrow,
+    int row,
+    int column,
+  ) {
+    for (var i = 0; i < arrow.length; i++) {
+      var arrowRow = arrow.row;
+      var arrowColumn = arrow.column;
+
+      switch (arrow.direction) {
+        case ArrowDirection.up:
+          arrowRow -= i;
+          break;
+        case ArrowDirection.right:
+          arrowColumn += i;
+          break;
+        case ArrowDirection.down:
+          arrowRow += i;
+          break;
+        case ArrowDirection.left:
+          arrowColumn -= i;
+          break;
+      }
+
+      if (arrowRow == row && arrowColumn == column) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   bool canExit(Arrow arrow) {
@@ -67,7 +99,9 @@ class GameBoard {
         return true;
       }
 
-      if (arrowAt(row, column) != null) {
+      final blockingArrow = arrowAt(row, column);
+
+      if (blockingArrow != null && blockingArrow != arrow) {
         return false;
       }
     }
