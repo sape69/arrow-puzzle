@@ -13,11 +13,12 @@ class Arrow {
     this.length = 1,
   }) : path = null;
 
-  const Arrow.bent({
+  Arrow.bent({
     required this.row,
     required this.column,
-    required this.path,
-  })  : direction = path.last,
+    required List<ArrowDirection> path,
+  })  : path = List.unmodifiable(path),
+        direction = path.last,
         length = path.length;
 
   final int row;
