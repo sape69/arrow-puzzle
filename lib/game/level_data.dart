@@ -5,17 +5,20 @@ import 'levels/level_3.dart';
 class LevelData {
   const LevelData({
     required this.arrows,
+    this.size = 7,
   });
 
   final List<Arrow> arrows;
+  final int size;
 }
 
 const List<LevelData> levels = [
   // ============================================================
-  // LEVEL 1
+  // LEVEL 1 — 7 × 7
   // ============================================================
 
   LevelData(
+    size: 7,
     arrows: [
       Arrow(row: 1, column: 1, direction: ArrowDirection.up),
       Arrow(row: 1, column: 2, direction: ArrowDirection.up),
@@ -33,14 +36,16 @@ const List<LevelData> levels = [
   ),
 
   // ============================================================
-  // LEVEL 2
+  // LEVEL 2 — 7 × 7
   // ============================================================
 
   level2,
 
   // ============================================================
-  // LEVEL 3
+  // LEVEL 3 — 7 × 7
   // ============================================================
 
   level3,
+
+  // Level 4 ja 5 lisätään seuraavissa vaiheissa.
 ];
