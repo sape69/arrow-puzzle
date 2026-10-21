@@ -33,196 +33,181 @@ class GameBoard {
     int column,
   ) {
     for (final arrow in arrows) {
-      if (_occupiesCell(
-        arrow,
-        row,
-        column,
-      )) {
-        return arrow;
+      final cells = occupiedCells(arrow);
+
+      for (final cell in cells) {
+        if (cell.row == row &&
+            cell.column == column) {
+          return arrow;
+        }
       }
     }
 
     return null;
   }
 
-  bool _occupiesCell(
+  List<GridPosition> occupiedCells(
     Arrow arrow,
-    int row,
-    int column,
   ) {
-    var currentRow = arrow.row;
-    var currentColumn = arrow.column;
+    final cells = <GridPosition>[];
 
-    if (currentRow == row &&
-        currentColumn == column) {
-      return true;
-    }
+    var row = arrow.row;
+    var column = arrow.column;
+
+    cells.add(
+      GridPosition(
+        row: row,
+        column: column,
+      ),
+    );
 
     if (arrow.isBent) {
       for (final direction in arrow.path) {
         final next = _move(
-          currentRow,
-          currentColumn,
+          row,
+          column,
           direction,
         );
 
-        currentRow = next.row;
-        currentColumn = next.column;
+        row = next.row;
+        column = next.column;
 
-        if (currentRow == row &&
-            currentColumn == column) {
-          return true;
-        }
+        cells.add(
+          GridPosition(
+            row: row,
+            column: column,
+          ),
+        );
       }
 
-      return false;
+      return cells;
     }
 
     for (var i = 1; i < arrow.length; i++) {
       final next = _move(
-        currentRow,
-        currentColumn,
+        row,
+        column,
         arrow.direction,
       );
 
-      currentRow = next.row;
-      currentColumn = next.column;
+      row = next.row;
+      column = next.column;
 
-      if (currentRow == row &&
-          currentColumn == column) {
-        return true;
-      }
+      cells.add(
+        GridPosition(
+          row: row,
+          column: column,
+        ),
+      );
     }
 
-    return false;
+    return cells;
   }
 
-  bool canExit(Arrow arrow) {
-    final tip = _arrowTip(arrow);
-
-    return _pathToEdgeIsClear(
-      arrow,
-      tip.row,
-      tip.column,
-      arrow.exitDirection,
-    );
-  }
-
-  _GridPosition _arrowTip(Arrow arrow) {
-    var row = arrow.row;
-    var column = arrow.column;
-
-    if (arrow.isBent) {
-      for (final direction in arrow.path) {
-        final next = _move(
-          row,
-          column,
-          direction,
-        );
-
-        row = next.row;
-        column = next.column;
-      }
-    } else {
-      for (var i = 1; i < arrow.length; i++) {
-        final next = _move(
-          row,
-          column,
-          arrow.direction,
-        );
-
-        row = next.row;
-        column = next.column;
-      }
-    }
-
-    return _GridPosition(
-      row: row,
-      column: column,
-    );
-  }
-
-  bool _pathToEdgeIsClear(
+  GridPosition arrowTip(
     Arrow arrow,
-    int row,
-    int column,
-    ArrowDirection direction,
   ) {
-    var currentRow = row;
-    var currentColumn = column;
+    final cells = occupiedCells(arrow);
+
+    return cells.last;
+  }
+
+  ArrowDirection exitDirection(
+    Arrow arrow,
+  ) {
+    if (arrow.isBent) {
+      return arrow.path.last;
+    }
+
+    return arrow.direction;
+  }
+
+  bool canExit(
+    Arrow arrow,
+  ) {
+    final tip = arrowTip(arrow);
+    final direction = exitDirection(arrow);
+
+    var row = tip.row;
+    var column = tip.column;
 
     while (true) {
       final next = _move(
-        currentRow,
-        currentColumn,
+        row,
+        column,
         direction,
       );
 
-      currentRow = next.row;
-      currentColumn = next.column;
+      row = next.row;
+      column = next.column;
 
-      // Nuoli on päässyt laudan ulkopuolelle.
-      if (currentRow < 0 ||
-          currentRow >= size ||
-          currentColumn < 0 ||
-          currentColumn >= size) {
+      if (!_isInsideBoard(row, column)) {
         return true;
       }
 
       final blockingArrow = arrowAt(
-        currentRow,
-        currentColumn,
+        row,
+        column,
       );
 
-      // Oma nuoli ei voi estää itseään.
-      if (blockingArrow == null ||
-          blockingArrow == arrow) {
-        continue;
+      if (blockingArrow != null &&
+          blockingArrow != arrow) {
+        return false;
       }
-
-      return false;
     }
   }
 
-  _GridPosition _move(
+  bool _isInsideBoard(
+    int row,
+    int column,
+  ) {
+    return row >= 0 &&
+        row < size &&
+        column >= 0 &&
+        column < size;
+  }
+
+  GridPosition _move(
     int row,
     int column,
     ArrowDirection direction,
   ) {
     switch (direction) {
       case ArrowDirection.up:
-        return _GridPosition(
+        return GridPosition(
           row: row - 1,
           column: column,
         );
 
       case ArrowDirection.right:
-        return _GridPosition(
+        return GridPosition(
           row: row,
           column: column + 1,
         );
 
       case ArrowDirection.down:
-        return _GridPosition(
+        return GridPosition(
           row: row + 1,
           column: column,
         );
 
       case ArrowDirection.left:
-        return _GridPosition(
+        return GridPosition(
           row: row,
           column: column - 1,
         );
     }
   }
 
-  void removeArrow(Arrow arrow) {
+  void removeArrow(
+    Arrow arrow,
+  ) {
     arrows.remove(arrow);
   }
 }
 
-class _GridPosition {
-  const _GridPosition({
+class GridPosition {
+  const GridPosition({
     required this.row,
     required this.column,
   });
