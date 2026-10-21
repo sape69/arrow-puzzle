@@ -28,39 +28,16 @@ class ArrowWidget extends StatelessWidget {
   }
 
   Widget _buildStraightArrow() {
-    final iconSize = math.min(
-      cellSize * 0.55,
-      36.0,
+    return CustomPaint(
+      painter: _StraightArrowPainter(
+        direction: arrow.direction,
+        length: arrow.length,
+        cellSize: cellSize,
+        spacing: spacing,
+        color: color,
+      ),
+      size: Size.infinite,
     );
-
-    final icon = Icon(
-      Icons.arrow_forward,
-      size: iconSize,
-      color: color,
-    );
-
-    switch (arrow.direction) {
-      case ArrowDirection.right:
-        return icon;
-
-      case ArrowDirection.left:
-        return Transform.rotate(
-          angle: math.pi,
-          child: icon,
-        );
-
-      case ArrowDirection.up:
-        return Transform.rotate(
-          angle: -math.pi / 2,
-          child: icon,
-        );
-
-      case ArrowDirection.down:
-        return Transform.rotate(
-          angle: math.pi / 2,
-          child: icon,
-        );
-    }
   }
 
   Widget _buildBentArrow() {
@@ -73,6 +50,210 @@ class ArrowWidget extends StatelessWidget {
       ),
       size: Size.infinite,
     );
+  }
+}
+
+class _StraightArrowPainter extends CustomPainter {
+  const _StraightArrowPainter({
+    required this.direction,
+    required this.length,
+    required this.cellSize,
+    required this.spacing,
+    required this.color,
+  });
+
+  final ArrowDirection direction;
+  final int length;
+  final double cellSize;
+  final double spacing;
+  final Color color;
+
+  double get step => cellSize + spacing;
+
+  @override
+  void paint(
+    Canvas canvas,
+    Size size,
+  ) {
+    if (length <= 0) {
+      return;
+    }
+
+    final center = cellSize / 2;
+
+    Offset start;
+    Offset end;
+
+    switch (direction) {
+      case ArrowDirection.right:
+        start = Offset(
+          center,
+          center,
+        );
+        end = Offset(
+          center + ((length - 1) * step),
+          center,
+        );
+        break;
+
+      case ArrowDirection.left:
+        start = Offset(
+          center + ((length - 1) * step),
+          center,
+        );
+        end = Offset(
+          center,
+          center,
+        );
+        break;
+
+      case ArrowDirection.down:
+        start = Offset(
+          center,
+          center,
+        );
+        end = Offset(
+          center,
+          center + ((length - 1) * step),
+        );
+        break;
+
+      case ArrowDirection.up:
+        start = Offset(
+          center,
+          center + ((length - 1) * step),
+        );
+        end = Offset(
+          center,
+          center,
+        );
+        break;
+    }
+
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = math.max(
+        6.0,
+        cellSize * 0.12,
+      )
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawLine(
+      start,
+      end,
+      paint,
+    );
+
+    _drawArrowHead(
+      canvas,
+      end,
+    );
+  }
+
+  void _drawArrowHead(
+    Canvas canvas,
+    Offset tip,
+  ) {
+    final headSize = math.min(
+      cellSize * 0.30,
+      16.0,
+    );
+
+    final side = _perpendicular(
+      direction,
+    );
+
+    final sideOffset = _directionOffset(
+      side,
+      headSize,
+    );
+
+    final backOffset = _directionOffset(
+      direction,
+      headSize,
+    );
+
+    final left = tip - sideOffset - backOffset;
+    final right = tip + sideOffset - backOffset;
+
+    final head = Path()
+      ..moveTo(
+        tip.dx,
+        tip.dy,
+      )
+      ..lineTo(
+        left.dx,
+        left.dy,
+      )
+      ..lineTo(
+        right.dx,
+        right.dy,
+      )
+      ..close();
+
+    canvas.drawPath(
+      head,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.fill,
+    );
+  }
+
+  Offset _directionOffset(
+    ArrowDirection direction,
+    double distance,
+  ) {
+    switch (direction) {
+      case ArrowDirection.up:
+        return Offset(
+          0,
+          -distance,
+        );
+
+      case ArrowDirection.right:
+        return Offset(
+          distance,
+          0,
+        );
+
+      case ArrowDirection.down:
+        return Offset(
+          0,
+          distance,
+        );
+
+      case ArrowDirection.left:
+        return Offset(
+          -distance,
+          0,
+        );
+    }
+  }
+
+  ArrowDirection _perpendicular(
+    ArrowDirection direction,
+  ) {
+    switch (direction) {
+      case ArrowDirection.up:
+      case ArrowDirection.down:
+        return ArrowDirection.right;
+
+      case ArrowDirection.left:
+      case ArrowDirection.right:
+        return ArrowDirection.down;
+    }
+  }
+
+  @override
+  bool shouldRepaint(
+    _StraightArrowPainter oldDelegate,
+  ) {
+    return oldDelegate.direction != direction ||
+        oldDelegate.length != length ||
+        oldDelegate.cellSize != cellSize ||
+        oldDelegate.spacing != spacing ||
+        oldDelegate.color != color;
   }
 }
 
@@ -280,14 +461,10 @@ class _BentArrowPainter extends CustomPainter {
     );
 
     final left =
-        point -
-        sideOffset -
-        backOffset;
+        point - sideOffset - backOffset;
 
     final right =
-        point +
-        sideOffset -
-        backOffset;
+        point + sideOffset - backOffset;
 
     final head = Path()
       ..moveTo(
