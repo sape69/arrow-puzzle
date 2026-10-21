@@ -133,8 +133,8 @@ class _StraightArrowPainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..strokeWidth = math.max(
-        6.0,
-        cellSize * 0.12,
+        5.0,
+        cellSize * 0.10,
       )
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -156,8 +156,8 @@ class _StraightArrowPainter extends CustomPainter {
     Offset tip,
   ) {
     final headSize = math.min(
-      cellSize * 0.30,
-      16.0,
+      cellSize * 0.18,
+      10.0,
     );
 
     final side = _perpendicular(
@@ -171,7 +171,7 @@ class _StraightArrowPainter extends CustomPainter {
 
     final backOffset = _directionOffset(
       direction,
-      headSize,
+      headSize * 0.9,
     );
 
     final left = tip - sideOffset - backOffset;
@@ -345,8 +345,8 @@ class _BentArrowPainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..strokeWidth = math.max(
-        6.0,
-        cellSize * 0.12,
+        5.0,
+        cellSize * 0.10,
       )
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
@@ -442,8 +442,8 @@ class _BentArrowPainter extends CustomPainter {
     ArrowDirection direction,
   ) {
     final headSize = math.min(
-      cellSize * 0.22,
-      12.0,
+      cellSize * 0.18,
+      10.0,
     );
 
     final side = _perpendicular(
@@ -457,7 +457,7 @@ class _BentArrowPainter extends CustomPainter {
 
     final backOffset = _directionOffset(
       direction,
-      headSize,
+      headSize * 0.9,
     );
 
     final left =
