@@ -137,27 +137,24 @@ class GameBoardWidget extends StatelessWidget {
     double padding,
   ) {
     final isFailed = failedArrow == arrow;
+    final bounds = _arrowBounds(arrow);
 
     return Positioned(
-      left: _arrowLeft(
-        arrow,
-        cellSize,
-        spacing,
-        padding,
-      ),
-      top: _arrowTop(
-        arrow,
-        cellSize,
-        spacing,
-        padding,
-      ),
-      width: _arrowWidth(
-        arrow,
+      left: padding +
+          bounds.minColumn *
+              (cellSize + spacing),
+      top: padding +
+          bounds.minRow *
+              (cellSize + spacing),
+      width: _boundsSize(
+        bounds.minColumn,
+        bounds.maxColumn,
         cellSize,
         spacing,
       ),
-      height: _arrowHeight(
-        arrow,
+      height: _boundsSize(
+        bounds.minRow,
+        bounds.maxRow,
         cellSize,
         spacing,
       ),
@@ -173,6 +170,58 @@ class GameBoardWidget extends StatelessWidget {
               ),
       ),
     );
+  }
+
+  _ArrowBounds _arrowBounds(
+    Arrow arrow,
+  ) {
+    final cells = board.occupiedCells(arrow);
+
+    var minRow = cells.first.row;
+    var maxRow = cells.first.row;
+    var minColumn = cells.first.column;
+    var maxColumn = cells.first.column;
+
+    for (final cell in cells) {
+      minRow = math.min(
+        minRow,
+        cell.row,
+      );
+
+      maxRow = math.max(
+        maxRow,
+        cell.row,
+      );
+
+      minColumn = math.min(
+        minColumn,
+        cell.column,
+      );
+
+      maxColumn = math.max(
+        maxColumn,
+        cell.column,
+      );
+    }
+
+    return _ArrowBounds(
+      minRow: minRow,
+      maxRow: maxRow,
+      minColumn: minColumn,
+      maxColumn: maxColumn,
+    );
+  }
+
+  double _boundsSize(
+    int min,
+    int max,
+    double cellSize,
+    double spacing,
+  ) {
+    final cells = max - min + 1;
+
+    return (cells * cellSize) +
+        ((cells - 1) * spacing);
   }
 
   Widget _buildExitAnimation(
@@ -249,7 +298,7 @@ class GameBoardWidget extends StatelessWidget {
   ) {
     return TweenAnimationBuilder<double>(
       key: ValueKey(
-        'failed-$arrow',
+        'failed-${arrow.hashCode}',
       ),
       tween: Tween(
         begin: 0,
@@ -285,251 +334,6 @@ class GameBoardWidget extends StatelessWidget {
     );
   }
 
-  double _arrowWidth(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-  ) {
-    if (arrow.isBent) {
-      return _bentWidth(
-        arrow,
-        cellSize,
-        spacing,
-      );
-    }
-
-    if (arrow.direction == ArrowDirection.left ||
-        arrow.direction == ArrowDirection.right) {
-      return _arrowLength(
-        arrow,
-        cellSize,
-        spacing,
-      );
-    }
-
-    return cellSize;
-  }
-
-  double _arrowHeight(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-  ) {
-    if (arrow.isBent) {
-      return _bentHeight(
-        arrow,
-        cellSize,
-        spacing,
-      );
-    }
-
-    if (arrow.direction == ArrowDirection.up ||
-        arrow.direction == ArrowDirection.down) {
-      return _arrowLength(
-        arrow,
-        cellSize,
-        spacing,
-      );
-    }
-
-    return cellSize;
-  }
-
-  double _arrowLength(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-  ) {
-    return (arrow.length * cellSize) +
-        ((arrow.length - 1) * spacing);
-  }
-
-  double _bentWidth(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-  ) {
-    var column = 0;
-    var minColumn = 0;
-    var maxColumn = 0;
-
-    for (final direction in arrow.path) {
-      switch (direction) {
-        case ArrowDirection.left:
-          column--;
-          break;
-
-        case ArrowDirection.right:
-          column++;
-          break;
-
-        case ArrowDirection.up:
-        case ArrowDirection.down:
-          break;
-      }
-
-      minColumn = math.min(
-        minColumn,
-        column,
-      );
-
-      maxColumn = math.max(
-        maxColumn,
-        column,
-      );
-    }
-
-    return ((maxColumn - minColumn + 1) *
-            cellSize) +
-        ((maxColumn - minColumn) * spacing);
-  }
-
-  double _bentHeight(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-  ) {
-    var row = 0;
-    var minRow = 0;
-    var maxRow = 0;
-
-    for (final direction in arrow.path) {
-      switch (direction) {
-        case ArrowDirection.up:
-          row--;
-          break;
-
-        case ArrowDirection.down:
-          row++;
-          break;
-
-        case ArrowDirection.left:
-        case ArrowDirection.right:
-          break;
-      }
-
-      minRow = math.min(
-        minRow,
-        row,
-      );
-
-      maxRow = math.max(
-        maxRow,
-        row,
-      );
-    }
-
-    return ((maxRow - minRow + 1) *
-            cellSize) +
-        ((maxRow - minRow) * spacing);
-  }
-
-  double _arrowLeft(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-    double padding,
-  ) {
-    if (arrow.isBent) {
-      return _bentLeft(
-        arrow,
-        cellSize,
-        spacing,
-        padding,
-      );
-    }
-
-    if (arrow.direction == ArrowDirection.left) {
-      return padding +
-          (arrow.column - arrow.length + 1) *
-              (cellSize + spacing);
-    }
-
-    return padding +
-        arrow.column *
-            (cellSize + spacing);
-  }
-
-  double _arrowTop(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-    double padding,
-  ) {
-    if (arrow.isBent) {
-      return _bentTop(
-        arrow,
-        cellSize,
-        spacing,
-        padding,
-      );
-    }
-
-    if (arrow.direction == ArrowDirection.up) {
-      return padding +
-          (arrow.row - arrow.length + 1) *
-              (cellSize + spacing);
-    }
-
-    return padding +
-        arrow.row *
-            (cellSize + spacing);
-  }
-
-  double _bentLeft(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-    double padding,
-  ) {
-    var column = 0;
-    var minColumn = 0;
-
-    for (final direction in arrow.path) {
-      if (direction == ArrowDirection.left) {
-        column--;
-      } else if (direction == ArrowDirection.right) {
-        column++;
-      }
-
-      minColumn = math.min(
-        minColumn,
-        column,
-      );
-    }
-
-    return padding +
-        (arrow.column + minColumn) *
-            (cellSize + spacing);
-  }
-
-  double _bentTop(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-    double padding,
-  ) {
-    var row = 0;
-    var minRow = 0;
-
-    for (final direction in arrow.path) {
-      if (direction == ArrowDirection.up) {
-        row--;
-      } else if (direction == ArrowDirection.down) {
-        row++;
-      }
-
-      minRow = math.min(
-        minRow,
-        row,
-      );
-    }
-
-    return padding +
-        (arrow.row + minRow) *
-            (cellSize + spacing);
-  }
-
   Offset _collisionOffset(
     Arrow arrow,
     double value,
@@ -546,7 +350,11 @@ class GameBoardWidget extends StatelessWidget {
             2 *
             collisionDistance;
 
-    switch (arrow.direction) {
+    final direction = arrow.isBent
+        ? arrow.path.first
+        : arrow.direction;
+
+    switch (direction) {
       case ArrowDirection.up:
         return Offset(
           0,
@@ -572,4 +380,18 @@ class GameBoardWidget extends StatelessWidget {
         );
     }
   }
+}
+
+class _ArrowBounds {
+  const _ArrowBounds({
+    required this.minRow,
+    required this.maxRow,
+    required this.minColumn,
+    required this.maxColumn,
+  });
+
+  final int minRow;
+  final int maxRow;
+  final int minColumn;
+  final int maxColumn;
 }
