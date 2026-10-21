@@ -8,16 +8,22 @@ import '../widgets/arrow_exit_animation.dart';
 import '../widgets/arrow_widget.dart';
 import '../widgets/game_hud.dart';
 import '../widgets/game_over_dialog.dart';
+import 'level_select_screen.dart';
 
 class GameScreen extends StatefulWidget {
-  const GameScreen({super.key});
+  const GameScreen({
+    super.key,
+    this.startLevel = 0,
+  });
+
+  final int startLevel;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
 }
 
 class _GameScreenState extends State<GameScreen> {
-  final GameBoard board = GameBoard();
+  late final GameBoard board;
 
   int moves = 0;
   int lives = 3;
@@ -25,6 +31,15 @@ class _GameScreenState extends State<GameScreen> {
   Arrow? exitingArrow;
   Arrow? failedArrow;
   bool isAnimating = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    board = GameBoard();
+    board.currentLevel = widget.startLevel;
+    board.reset();
+  }
 
   void _tapArrow(Arrow arrow) {
     if (isAnimating || failedArrow != null) {
@@ -190,6 +205,32 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
+  Future<void> _selectLevel() async {
+    if (isAnimating) {
+      return;
+    }
+
+    final selectedLevel = await Navigator.of(context).push<int>(
+      MaterialPageRoute(
+        builder: (_) => const LevelSelectScreen(),
+      ),
+    );
+
+    if (!mounted || selectedLevel == null) {
+      return;
+    }
+
+    setState(() {
+      board.currentLevel = selectedLevel;
+      board.reset();
+      moves = 0;
+      lives = 3;
+      exitingArrow = null;
+      failedArrow = null;
+      isAnimating = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -198,6 +239,15 @@ class _GameScreenState extends State<GameScreen> {
           'ARROW PUZZLE • LEVEL ${board.currentLevel + 1}',
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: _selectLevel,
+            tooltip: 'Select level',
+            icon: const Icon(
+              Icons.grid_view_rounded,
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -244,7 +294,8 @@ class _GameScreenState extends State<GameScreen> {
         Padding(
           padding: const EdgeInsets.all(padding),
           child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(),
+            physics:
+                const NeverScrollableScrollPhysics(),
             gridDelegate:
                 SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: board.size,
