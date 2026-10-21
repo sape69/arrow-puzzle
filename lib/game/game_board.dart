@@ -58,12 +58,12 @@ class GameBoard {
       return true;
     }
 
-    if (!arrow.isBent) {
-      for (var i = 1; i < arrow.length; i++) {
+    if (arrow.isBent) {
+      for (final direction in arrow.path) {
         final next = _move(
           currentRow,
           currentColumn,
-          arrow.direction,
+          direction,
         );
 
         currentRow = next.row;
@@ -78,11 +78,11 @@ class GameBoard {
       return false;
     }
 
-    for (final direction in arrow.path) {
+    for (var i = 1; i < arrow.length; i++) {
       final next = _move(
         currentRow,
         currentColumn,
-        direction,
+        arrow.direction,
       );
 
       currentRow = next.row;
@@ -98,6 +98,17 @@ class GameBoard {
   }
 
   bool canExit(Arrow arrow) {
+    final tip = _arrowTip(arrow);
+
+    return _pathToEdgeIsClear(
+      arrow,
+      tip.row,
+      tip.column,
+      arrow.exitDirection,
+    );
+  }
+
+  _GridPosition _arrowTip(Arrow arrow) {
     var row = arrow.row;
     var column = arrow.column;
 
@@ -125,15 +136,13 @@ class GameBoard {
       }
     }
 
-    return _clearToEdge(
-      arrow,
-      row,
-      column,
-      arrow.exitDirection,
+    return _GridPosition(
+      row: row,
+      column: column,
     );
   }
 
-  bool _clearToEdge(
+  bool _pathToEdgeIsClear(
     Arrow arrow,
     int row,
     int column,
@@ -152,6 +161,7 @@ class GameBoard {
       currentRow = next.row;
       currentColumn = next.column;
 
+      // Nuoli on päässyt laudan ulkopuolelle.
       if (currentRow < 0 ||
           currentRow >= size ||
           currentColumn < 0 ||
@@ -164,10 +174,13 @@ class GameBoard {
         currentColumn,
       );
 
-      if (blockingArrow != null &&
-          blockingArrow != arrow) {
-        return false;
+      // Oma nuoli ei voi estää itseään.
+      if (blockingArrow == null ||
+          blockingArrow == arrow) {
+        continue;
       }
+
+      return false;
     }
   }
 
