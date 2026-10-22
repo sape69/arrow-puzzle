@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arrow_puzzle/game/game_board.dart';
@@ -25,34 +26,6 @@ void main() {
 
       final solution = solver.findSolution(board);
 
-      debugPrint('');
-      debugPrint('=== GENERATED LEVEL 7 ===');
-      debugPrint('size: ${level.size}');
-      debugPrint('arrows: ${level.arrows.length}');
-      debugPrint('');
-
-      for (var i = 0;
-          i < level.arrows.length;
-          i++) {
-        final arrow = level.arrows[i];
-
-        debugPrint(
-          'Arrow('
-          'row: ${arrow.row}, '
-          'column: ${arrow.column}, '
-          'direction: ArrowDirection.${arrow.direction.name}, '
-          'length: ${arrow.length},'
-          '),',
-        );
-      }
-
-      debugPrint('');
-      debugPrint(
-        'solution length: ${solution?.length ?? 0}',
-      );
-      debugPrint('==========================');
-      debugPrint('');
-
       expect(
         level.size,
         9,
@@ -71,6 +44,75 @@ void main() {
       expect(
         solution!.length,
         level.arrows.length,
+      );
+
+      final outputDirectory = Directory(
+        'build/generated',
+      );
+
+      outputDirectory.createSync(
+        recursive: true,
+      );
+
+      final outputFile = File(
+        'build/generated/level_7.dart',
+      );
+
+      final buffer = StringBuffer();
+
+      buffer.writeln(
+        "import '../lib/game/arrow.dart';",
+      );
+      buffer.writeln(
+        "import '../lib/game/level_data.dart';",
+      );
+      buffer.writeln();
+      buffer.writeln(
+        'const level7 = LevelData(',
+      );
+      buffer.writeln(
+        '  size: ${level.size},',
+      );
+      buffer.writeln(
+        '  arrows: [',
+      );
+
+      for (final arrow in level.arrows) {
+        buffer.writeln(
+          '    Arrow(',
+        );
+        buffer.writeln(
+          '      row: ${arrow.row},',
+        );
+        buffer.writeln(
+          '      column: ${arrow.column},',
+        );
+        buffer.writeln(
+          '      direction: '
+          'ArrowDirection.${arrow.direction.name},',
+        );
+        buffer.writeln(
+          '      length: ${arrow.length},',
+        );
+        buffer.writeln(
+          '    ),',
+        );
+      }
+
+      buffer.writeln(
+        '  ],',
+      );
+      buffer.writeln(
+        ');',
+      );
+
+      outputFile.writeAsStringSync(
+        buffer.toString(),
+      );
+
+      expect(
+        outputFile.existsSync(),
+        isTrue,
       );
     },
   );
