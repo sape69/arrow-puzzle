@@ -6,7 +6,7 @@ import 'package:arrow_puzzle/game/level_solver.dart';
 
 void main() {
   test(
-    'Level 7 diagnostic',
+    'Level 7 should be solvable',
     () {
       final board = GameBoard(
         level: levels[6],
@@ -17,40 +17,6 @@ void main() {
       final movable = board.arrows
           .where(board.canExit)
           .toList();
-
-      print('');
-      print('=== LEVEL 7 DIAGNOSTIC ===');
-      print('Board size: ${board.size}');
-      print('Arrow count: ${board.arrows.length}');
-      print('Movable arrows: ${movable.length}');
-
-      for (var i = 0; i < movable.length; i++) {
-        final arrow = movable[i];
-
-        print(
-          'Movable ${i + 1}: '
-          'row=${arrow.row}, '
-          'column=${arrow.column}, '
-          'direction=${arrow.direction}, '
-          'length=${arrow.length}',
-        );
-      }
-
-      final solution = solver.findSolution(board);
-
-      print(
-        'Solver solution: '
-        '${solution == null ? 'NONE' : 'FOUND'}',
-      );
-
-      if (solution != null) {
-        print(
-          'Solution length: ${solution.length}',
-        );
-      }
-
-      print('==========================');
-      print('');
 
       expect(
         board.size,
@@ -65,11 +31,23 @@ void main() {
       expect(
         movable,
         isNotEmpty,
+        reason:
+            'Level 7 has no arrow that can exit at the start.',
       );
+
+      final solution = solver.findSolution(board);
 
       expect(
         solution,
         isNotNull,
+        reason:
+            'Level 7 has ${movable.length} initially movable arrows, '
+            'but the solver could not find a complete solution.',
+      );
+
+      expect(
+        solution!.length,
+        board.arrows.length,
       );
     },
   );
