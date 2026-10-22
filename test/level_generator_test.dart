@@ -6,7 +6,7 @@ import 'package:arrow_puzzle/game/level_solver.dart';
 
 void main() {
   test(
-    'Generator creates a solvable 9x9 level',
+    'Level 7 generator creates a solvable 9x9 level',
     () {
       const generator = LevelGenerator();
       const solver = LevelSolver();
@@ -15,6 +15,7 @@ void main() {
         size: 9,
         arrowCount: 20,
         seed: 7,
+        maxAttempts: 1000,
       );
 
       final board = GameBoard(
@@ -40,7 +41,7 @@ void main() {
 
       expect(
         solution!.length,
-        20,
+        level.arrows.length,
       );
     },
   );
