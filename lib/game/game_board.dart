@@ -2,23 +2,34 @@ import 'arrow.dart';
 import 'level_data.dart';
 
 class GameBoard {
-  GameBoard() {
+  GameBoard({
+    LevelData? level,
+  }) : _customLevel = level {
     reset();
   }
+
+  final LevelData? _customLevel;
 
   int currentLevel = 0;
 
   final List<Arrow> arrows = [];
 
-  int get size => levels[currentLevel].size;
+  LevelData get level =>
+      _customLevel ?? levels[currentLevel];
+
+  int get size => level.size;
 
   void reset() {
     arrows
       ..clear()
-      ..addAll(levels[currentLevel].arrows);
+      ..addAll(level.arrows);
   }
 
   bool nextLevel() {
+    if (_customLevel != null) {
+      return false;
+    }
+
     if (currentLevel >= levels.length - 1) {
       return false;
     }
@@ -33,33 +44,84 @@ class GameBoard {
     int column,
   ) {
     for (final arrow in arrows) {
-      final cells = occupiedCells(arrow);
-
-      for (final cell in cells) {
-        if (cell.row == row &&
-            cell.column == column) {
-          return arrow;
-        }
+      if (_occupiesCell(
+        arrow,
+        row,
+        column,
+      )) {
+        return arrow;
       }
     }
 
     return null;
   }
 
-  List<GridPosition> occupiedCells(
+  bool _occupiesCell(
     Arrow arrow,
+    int row,
+    int column,
   ) {
-    final cells = <GridPosition>[];
+    var currentRow = arrow.row;
+    var currentColumn = arrow.column;
 
+    if (currentRow == row &&
+        currentColumn == column) {
+      return true;
+    }
+
+    if (arrow.isBent) {
+      for (final direction in arrow.path) {
+        final next = _move(
+          currentRow,
+          currentColumn,
+          direction,
+        );
+
+        currentRow = next.row;
+        currentColumn = next.column;
+
+        if (currentRow == row &&
+            currentColumn == column) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    for (var i = 1; i < arrow.length; i++) {
+      final next = _move(
+        currentRow,
+        currentColumn,
+        arrow.direction,
+      );
+
+      currentRow = next.row;
+      currentColumn = next.column;
+
+      if (currentRow == row &&
+          currentColumn == column) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  bool canExit(Arrow arrow) {
+    final tip = _arrowTip(arrow);
+
+    return _pathToEdgeIsClear(
+      arrow,
+      tip.row,
+      tip.column,
+      arrow.exitDirection,
+    );
+  }
+
+  _GridPosition _arrowTip(Arrow arrow) {
     var row = arrow.row;
     var column = arrow.column;
-
-    cells.add(
-      GridPosition(
-        row: row,
-        column: column,
-      ),
-    );
 
     if (arrow.isBent) {
       for (final direction in arrow.path) {
@@ -71,143 +133,105 @@ class GameBoard {
 
         row = next.row;
         column = next.column;
-
-        cells.add(
-          GridPosition(
-            row: row,
-            column: column,
-          ),
-        );
       }
+    } else {
+      for (var i = 1; i < arrow.length; i++) {
+        final next = _move(
+          row,
+          column,
+          arrow.direction,
+        );
 
-      return cells;
+        row = next.row;
+        column = next.column;
+      }
     }
 
-    for (var i = 1; i < arrow.length; i++) {
-      final next = _move(
-        row,
-        column,
-        arrow.direction,
-      );
-
-      row = next.row;
-      column = next.column;
-
-      cells.add(
-        GridPosition(
-          row: row,
-          column: column,
-        ),
-      );
-    }
-
-    return cells;
+    return _GridPosition(
+      row: row,
+      column: column,
+    );
   }
 
-  GridPosition arrowTip(
+  bool _pathToEdgeIsClear(
     Arrow arrow,
+    int row,
+    int column,
+    ArrowDirection direction,
   ) {
-    final cells = occupiedCells(arrow);
-
-    return cells.last;
-  }
-
-  ArrowDirection exitDirection(
-    Arrow arrow,
-  ) {
-    if (arrow.isBent) {
-      return arrow.path.last;
-    }
-
-    return arrow.direction;
-  }
-
-  bool canExit(
-    Arrow arrow,
-  ) {
-    final tip = arrowTip(arrow);
-    final direction = exitDirection(arrow);
-
-    var row = tip.row;
-    var column = tip.column;
+    var currentRow = row;
+    var currentColumn = column;
 
     while (true) {
       final next = _move(
-        row,
-        column,
+        currentRow,
+        currentColumn,
         direction,
       );
 
-      row = next.row;
-      column = next.column;
+      currentRow = next.row;
+      currentColumn = next.column;
 
-      if (!_isInsideBoard(row, column)) {
+      if (currentRow < 0 ||
+          currentRow >= size ||
+          currentColumn < 0 ||
+          currentColumn >= size) {
         return true;
       }
 
       final blockingArrow = arrowAt(
-        row,
-        column,
+        currentRow,
+        currentColumn,
       );
 
-      if (blockingArrow != null &&
-          blockingArrow != arrow) {
-        return false;
+      if (blockingArrow == null ||
+          blockingArrow == arrow) {
+        continue;
       }
+
+      return false;
     }
   }
 
-  bool _isInsideBoard(
-    int row,
-    int column,
-  ) {
-    return row >= 0 &&
-        row < size &&
-        column >= 0 &&
-        column < size;
-  }
-
-  GridPosition _move(
+  _GridPosition _move(
     int row,
     int column,
     ArrowDirection direction,
   ) {
     switch (direction) {
       case ArrowDirection.up:
-        return GridPosition(
+        return _GridPosition(
           row: row - 1,
           column: column,
         );
 
       case ArrowDirection.right:
-        return GridPosition(
+        return _GridPosition(
           row: row,
           column: column + 1,
         );
 
       case ArrowDirection.down:
-        return GridPosition(
+        return _GridPosition(
           row: row + 1,
           column: column,
         );
 
       case ArrowDirection.left:
-        return GridPosition(
+        return _GridPosition(
           row: row,
           column: column - 1,
         );
     }
   }
 
-  void removeArrow(
-    Arrow arrow,
-  ) {
+  void removeArrow(Arrow arrow) {
     arrows.remove(arrow);
   }
 }
 
-class GridPosition {
-  const GridPosition({
+class _GridPosition {
+  const _GridPosition({
     required this.row,
     required this.column,
   });
