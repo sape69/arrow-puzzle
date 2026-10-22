@@ -5,7 +5,6 @@ import 'levels/level_4.dart';
 import 'levels/level_5.dart';
 import 'levels/level_6.dart';
 import 'levels/level_7.dart';
-import 'levels/level_8.dart';
 
 class LevelData {
   const LevelData({
@@ -89,5 +88,4 @@ const List<LevelData> levels = [
   level5,
   level6,
   level7,
-  level8,
 ];
