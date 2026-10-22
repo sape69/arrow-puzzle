@@ -67,9 +67,6 @@ class GameBoardWidget extends StatelessWidget {
             ),
             itemCount: board.size * board.size,
             itemBuilder: (context, index) {
-              final row = index ~/ board.size;
-              final column = index % board.size;
-
               return Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFF21113B),
