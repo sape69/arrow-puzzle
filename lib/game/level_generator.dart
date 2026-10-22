@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'arrow.dart';
 import 'level_data.dart';
+import 'level_solver.dart';
+import 'game_board.dart';
 
 class LevelGenerator {
   const LevelGenerator();
@@ -10,10 +12,44 @@ class LevelGenerator {
     required int size,
     required int arrowCount,
     int seed = 1,
+    int maxAttempts = 1000,
   }) {
     final random = Random(seed);
 
+    for (var attempt = 0;
+        attempt < maxAttempts;
+        attempt++) {
+      final level = _generateCandidate(
+        size: size,
+        arrowCount: arrowCount,
+        random: random,
+      );
+
+      if (level.arrows.length != arrowCount) {
+        continue;
+      }
+
+      final board = GameBoard(level: level);
+      const solver = LevelSolver();
+
+      if (solver.isSolvable(board)) {
+        return level;
+      }
+    }
+
+    throw StateError(
+      'Could not generate a solvable level '
+      'after $maxAttempts attempts.',
+    );
+  }
+
+  LevelData _generateCandidate({
+    required int size,
+    required int arrowCount,
+    required Random random,
+  }) {
     final arrows = <Arrow>[];
+
     final cells = <_Cell>[
       for (var row = 0; row < size; row++)
         for (var column = 0; column < size; column++)
@@ -35,10 +71,22 @@ class LevelGenerator {
       )..shuffle(random);
 
       for (final direction in directions) {
+        final maxLength = _maxLength(
+          cell,
+          direction,
+          size,
+        );
+
+        final length = 1 +
+            random.nextInt(
+              min(maxLength, 3),
+            );
+
         final arrow = Arrow(
           row: cell.row,
           column: cell.column,
           direction: direction,
+          length: length,
         );
 
         if (_canAddArrow(
@@ -58,19 +106,31 @@ class LevelGenerator {
     );
   }
 
+  int _maxLength(
+    _Cell cell,
+    ArrowDirection direction,
+    int size,
+  ) {
+    switch (direction) {
+      case ArrowDirection.up:
+        return cell.row + 1;
+
+      case ArrowDirection.right:
+        return size - cell.column;
+
+      case ArrowDirection.down:
+        return size - cell.row;
+
+      case ArrowDirection.left:
+        return cell.column + 1;
+    }
+  }
+
   bool _canAddArrow(
     Arrow arrow,
     List<Arrow> existing,
     int size,
   ) {
-    if (!_insideBoard(
-      arrow.row,
-      arrow.column,
-      size,
-    )) {
-      return false;
-    }
-
     final occupied = _occupiedCells(
       arrow,
       size,
@@ -103,11 +163,7 @@ class LevelGenerator {
     var row = arrow.row;
     var column = arrow.column;
 
-    if (!_insideBoard(
-      row,
-      column,
-      size,
-    )) {
+    if (!_insideBoard(row, column, size)) {
       return {};
     }
 
@@ -137,11 +193,7 @@ class LevelGenerator {
           break;
       }
 
-      if (!_insideBoard(
-        row,
-        column,
-        size,
-      )) {
+      if (!_insideBoard(row, column, size)) {
         return {};
       }
 
@@ -186,9 +238,6 @@ class _Cell {
 
   @override
   int get hashCode {
-    return Object.hash(
-      row,
-      column,
-    );
+    return Object.hash(row, column);
   }
 }
