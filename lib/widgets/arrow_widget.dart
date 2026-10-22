@@ -81,101 +81,146 @@ class _StraightArrowPainter extends CustomPainter {
 
     final center = cellSize / 2;
 
+    final tip = _pointAt(
+      center,
+      center,
+      length - 1,
+    );
+
+    final headLength = math.min(
+      cellSize * 0.28,
+      14.0,
+    );
+
+    final headWidth = math.min(
+      cellSize * 0.18,
+      9.0,
+    );
+
+    final directionVector =
+        _unitVector(direction);
+
     Offset start;
-    Offset end;
 
-    switch (direction) {
-      case ArrowDirection.right:
-        start = Offset(
-          center,
-          center,
-        );
-        end = Offset(
-          center + ((length - 1) * step),
-          center,
-        );
-        break;
-
-      case ArrowDirection.left:
-        start = Offset(
-          center + ((length - 1) * step),
-          center,
-        );
-        end = Offset(
-          center,
-          center,
-        );
-        break;
-
-      case ArrowDirection.down:
-        start = Offset(
-          center,
-          center,
-        );
-        end = Offset(
-          center,
-          center + ((length - 1) * step),
-        );
-        break;
-
-      case ArrowDirection.up:
-        start = Offset(
-          center,
-          center + ((length - 1) * step),
-        );
-        end = Offset(
-          center,
-          center,
-        );
-        break;
+    if (length == 1) {
+      start = tip -
+          directionVector *
+              (cellSize * 0.16);
+    } else {
+      start = _pointAt(
+        center,
+        center,
+        0,
+      );
     }
+
+    final shaftEnd =
+        tip -
+        directionVector *
+            (headLength * 0.65);
 
     final paint = Paint()
       ..color = color
       ..strokeWidth = math.max(
-        5.0,
-        cellSize * 0.10,
+        4.0,
+        cellSize * 0.075,
       )
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
     canvas.drawLine(
       start,
-      end,
+      shaftEnd,
       paint,
     );
 
     _drawArrowHead(
       canvas,
-      end,
+      tip,
+      headLength,
+      headWidth,
     );
+  }
+
+  Offset _pointAt(
+    double x,
+    double y,
+    int distance,
+  ) {
+    return Offset(
+      x + _directionVectorX(
+            direction,
+          ) *
+          distance *
+          step,
+      y + _directionVectorY(
+            direction,
+          ) *
+          distance *
+          step,
+    );
+  }
+
+  Offset _unitVector(
+    ArrowDirection direction,
+  ) {
+    return Offset(
+      _directionVectorX(direction),
+      _directionVectorY(direction),
+    );
+  }
+
+  double _directionVectorX(
+    ArrowDirection direction,
+  ) {
+    switch (direction) {
+      case ArrowDirection.left:
+        return -1;
+      case ArrowDirection.right:
+        return 1;
+      case ArrowDirection.up:
+      case ArrowDirection.down:
+        return 0;
+    }
+  }
+
+  double _directionVectorY(
+    ArrowDirection direction,
+  ) {
+    switch (direction) {
+      case ArrowDirection.up:
+        return -1;
+      case ArrowDirection.down:
+        return 1;
+      case ArrowDirection.left:
+      case ArrowDirection.right:
+        return 0;
+    }
   }
 
   void _drawArrowHead(
     Canvas canvas,
     Offset tip,
+    double length,
+    double width,
   ) {
-    final headSize = math.min(
-      cellSize * 0.18,
-      10.0,
+    final direction = _unitVector(
+      this.direction,
     );
 
-    final side = _perpendicular(
-      direction,
+    final perpendicular = Offset(
+      -direction.dy,
+      direction.dx,
     );
 
-    final sideOffset = _directionOffset(
-      side,
-      headSize,
-    );
+    final base = tip -
+        direction * length;
 
-    final backOffset = _directionOffset(
-      direction,
-      headSize * 0.9,
-    );
+    final left = base +
+        perpendicular * width;
 
-    final left = tip - sideOffset - backOffset;
-    final right = tip + sideOffset - backOffset;
+    final right = base -
+        perpendicular * width;
 
     final head = Path()
       ..moveTo(
@@ -198,51 +243,6 @@ class _StraightArrowPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.fill,
     );
-  }
-
-  Offset _directionOffset(
-    ArrowDirection direction,
-    double distance,
-  ) {
-    switch (direction) {
-      case ArrowDirection.up:
-        return Offset(
-          0,
-          -distance,
-        );
-
-      case ArrowDirection.right:
-        return Offset(
-          distance,
-          0,
-        );
-
-      case ArrowDirection.down:
-        return Offset(
-          0,
-          distance,
-        );
-
-      case ArrowDirection.left:
-        return Offset(
-          -distance,
-          0,
-        );
-    }
-  }
-
-  ArrowDirection _perpendicular(
-    ArrowDirection direction,
-  ) {
-    switch (direction) {
-      case ArrowDirection.up:
-      case ArrowDirection.down:
-        return ArrowDirection.right;
-
-      case ArrowDirection.left:
-      case ArrowDirection.right:
-        return ArrowDirection.down;
-    }
   }
 
   @override
@@ -345,8 +345,8 @@ class _BentArrowPainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..strokeWidth = math.max(
-        5.0,
-        cellSize * 0.10,
+        4.0,
+        cellSize * 0.075,
       )
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
@@ -361,7 +361,7 @@ class _BentArrowPainter extends CustomPainter {
       points.last,
     );
 
-    _drawArrowHead(
+    _drawBentArrowHead(
       canvas,
       lastPoint,
       path.last,
@@ -436,40 +436,43 @@ class _BentArrowPainter extends CustomPainter {
     );
   }
 
-  void _drawArrowHead(
+  void _drawBentArrowHead(
     Canvas canvas,
-    Offset point,
+    Offset tip,
     ArrowDirection direction,
   ) {
-    final headSize = math.min(
+    final headLength = math.min(
+      cellSize * 0.28,
+      14.0,
+    );
+
+    final headWidth = math.min(
       cellSize * 0.18,
-      10.0,
+      9.0,
     );
 
-    final side = _perpendicular(
+    final vector = _directionVector(
       direction,
     );
 
-    final sideOffset = _directionOffset(
-      side,
-      headSize,
+    final perpendicular = Offset(
+      -vector.dy,
+      vector.dx,
     );
 
-    final backOffset = _directionOffset(
-      direction,
-      headSize * 0.9,
-    );
+    final base = tip -
+        vector * headLength;
 
-    final left =
-        point - sideOffset - backOffset;
+    final left = base +
+        perpendicular * headWidth;
 
-    final right =
-        point + sideOffset - backOffset;
+    final right = base -
+        perpendicular * headWidth;
 
     final head = Path()
       ..moveTo(
-        point.dx,
-        point.dy,
+        tip.dx,
+        tip.dy,
       )
       ..lineTo(
         left.dx,
@@ -489,48 +492,21 @@ class _BentArrowPainter extends CustomPainter {
     );
   }
 
-  Offset _directionOffset(
-    ArrowDirection direction,
-    double distance,
-  ) {
-    switch (direction) {
-      case ArrowDirection.up:
-        return Offset(
-          0,
-          -distance,
-        );
-
-      case ArrowDirection.right:
-        return Offset(
-          distance,
-          0,
-        );
-
-      case ArrowDirection.down:
-        return Offset(
-          0,
-          distance,
-        );
-
-      case ArrowDirection.left:
-        return Offset(
-          -distance,
-          0,
-        );
-    }
-  }
-
-  ArrowDirection _perpendicular(
+  Offset _directionVector(
     ArrowDirection direction,
   ) {
     switch (direction) {
       case ArrowDirection.up:
+        return const Offset(0, -1);
+
+      case ArrowDirection.right:
+        return const Offset(1, 0);
+
       case ArrowDirection.down:
-        return ArrowDirection.right;
+        return const Offset(0, 1);
 
       case ArrowDirection.left:
-      case ArrowDirection.right:
-        return ArrowDirection.down;
+        return const Offset(-1, 0);
     }
   }
 
