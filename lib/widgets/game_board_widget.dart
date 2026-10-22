@@ -48,7 +48,8 @@ class GameBoardWidget extends StatelessWidget {
         (padding * 2) -
         (spacing * (board.size - 1));
 
-    final cellSize = availableWidth / board.size;
+    final cellSize =
+        availableWidth / board.size;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -69,21 +70,11 @@ class GameBoardWidget extends StatelessWidget {
               final row = index ~/ board.size;
               final column = index % board.size;
 
-              final arrow = board.arrowAt(
-                row,
-                column,
-              );
-
-              return GestureDetector(
-                onTap: arrow == null
-                    ? null
-                    : () => onArrowTap(arrow),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF21113B),
-                    borderRadius:
-                        BorderRadius.circular(8),
-                  ),
+              return Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF21113B),
+                  borderRadius:
+                      BorderRadius.circular(8),
                 ),
               );
             },
@@ -137,28 +128,44 @@ class GameBoardWidget extends StatelessWidget {
     double padding,
   ) {
     final isFailed = failedArrow == arrow;
-    final bounds = _arrowBounds(arrow);
 
     return Positioned(
-      left: padding +
-          bounds.minColumn *
-              (cellSize + spacing),
-      top: padding +
-          bounds.minRow *
-              (cellSize + spacing),
-      width: _boundsSize(
-        bounds.minColumn,
-        bounds.maxColumn,
+      left: _arrowLeft(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      ),
+      top: _arrowTop(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      ),
+      width: _arrowWidth(
+        arrow,
         cellSize,
         spacing,
       ),
-      height: _boundsSize(
-        bounds.minRow,
-        bounds.maxRow,
+      height: _arrowHeight(
+        arrow,
         cellSize,
         spacing,
       ),
-      child: IgnorePointer(
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTapDown: isFailed
+            ? null
+            : (details) {
+                if (_isOnArrow(
+                  arrow,
+                  details.localPosition,
+                  cellSize,
+                  spacing,
+                )) {
+                  onArrowTap(arrow);
+                }
+              },
         child: isFailed
             ? _buildFailedArrow(
                 arrow,
@@ -172,56 +179,243 @@ class GameBoardWidget extends StatelessWidget {
     );
   }
 
-  _ArrowBounds _arrowBounds(
+  bool _isOnArrow(
     Arrow arrow,
+    Offset point,
+    double cellSize,
+    double spacing,
   ) {
-    final cells = board.occupiedCells(arrow);
+    final tolerance = math.max(
+      10.0,
+      cellSize * 0.16,
+    );
 
-    var minRow = cells.first.row;
-    var maxRow = cells.first.row;
-    var minColumn = cells.first.column;
-    var maxColumn = cells.first.column;
+    if (arrow.isBent) {
+      return _isOnBentArrow(
+        arrow,
+        point,
+        cellSize,
+        spacing,
+        tolerance,
+      );
+    }
 
-    for (final cell in cells) {
-      minRow = math.min(
-        minRow,
-        cell.row,
+    return _isOnStraightArrow(
+      arrow,
+      point,
+      cellSize,
+      spacing,
+      tolerance,
+    );
+  }
+
+  bool _isOnStraightArrow(
+    Arrow arrow,
+    Offset point,
+    double cellSize,
+    double spacing,
+    double tolerance,
+  ) {
+    final center = cellSize / 2;
+    final step = cellSize + spacing;
+
+    Offset start;
+    Offset end;
+
+    switch (arrow.direction) {
+      case ArrowDirection.right:
+        start = Offset(
+          center,
+          center,
+        );
+        end = Offset(
+          center +
+              ((arrow.length - 1) * step),
+          center,
+        );
+        break;
+
+      case ArrowDirection.left:
+        start = Offset(
+          center +
+              ((arrow.length - 1) * step),
+          center,
+        );
+        end = Offset(
+          center,
+          center,
+        );
+        break;
+
+      case ArrowDirection.down:
+        start = Offset(
+          center,
+          center,
+        );
+        end = Offset(
+          center,
+          center +
+              ((arrow.length - 1) * step),
+        );
+        break;
+
+      case ArrowDirection.up:
+        start = Offset(
+          center,
+          center +
+              ((arrow.length - 1) * step),
+        );
+        end = Offset(
+          center,
+          center,
+        );
+        break;
+    }
+
+    final distance = _distanceToSegment(
+      point,
+      start,
+      end,
+    );
+
+    return distance <= tolerance;
+  }
+
+  bool _isOnBentArrow(
+    Arrow arrow,
+    Offset point,
+    double cellSize,
+    double spacing,
+    double tolerance,
+  ) {
+    final step = cellSize + spacing;
+
+    final bounds = _bentBounds(arrow);
+
+    var column = -bounds.minColumn;
+    var row = -bounds.minRow;
+
+    var previous = Offset(
+      (column * step) +
+          (cellSize / 2),
+      (row * step) +
+          (cellSize / 2),
+    );
+
+    for (final direction in arrow.path) {
+      switch (direction) {
+        case ArrowDirection.up:
+          row--;
+          break;
+
+        case ArrowDirection.right:
+          column++;
+          break;
+
+        case ArrowDirection.down:
+          row++;
+          break;
+
+        case ArrowDirection.left:
+          column--;
+          break;
+      }
+
+      final current = Offset(
+        (column * step) +
+            (cellSize / 2),
+        (row * step) +
+            (cellSize / 2),
       );
 
-      maxRow = math.max(
-        maxRow,
-        cell.row,
+      if (_distanceToSegment(
+            point,
+            previous,
+            current,
+          ) <=
+          tolerance) {
+        return true;
+      }
+
+      previous = current;
+    }
+
+    return false;
+  }
+
+  double _distanceToSegment(
+    Offset point,
+    Offset start,
+    Offset end,
+  ) {
+    final dx = end.dx - start.dx;
+    final dy = end.dy - start.dy;
+
+    if (dx == 0 && dy == 0) {
+      return (point - start).distance;
+    }
+
+    final lengthSquared =
+        (dx * dx) + (dy * dy);
+
+    var t =
+        ((point.dx - start.dx) * dx +
+                (point.dy - start.dy) * dy) /
+            lengthSquared;
+
+    t = t.clamp(0.0, 1.0);
+
+    final projection = Offset(
+      start.dx + (t * dx),
+      start.dy + (t * dy),
+    );
+
+    return (point - projection).distance;
+  }
+
+  _BentBounds _bentBounds(
+    Arrow arrow,
+  ) {
+    var row = 0;
+    var column = 0;
+
+    var minRow = 0;
+    var minColumn = 0;
+
+    for (final direction in arrow.path) {
+      switch (direction) {
+        case ArrowDirection.up:
+          row--;
+          break;
+
+        case ArrowDirection.right:
+          column++;
+          break;
+
+        case ArrowDirection.down:
+          row++;
+          break;
+
+        case ArrowDirection.left:
+          column--;
+          break;
+      }
+
+      minRow = math.min(
+        minRow,
+        row,
       );
 
       minColumn = math.min(
         minColumn,
-        cell.column,
-      );
-
-      maxColumn = math.max(
-        maxColumn,
-        cell.column,
+        column,
       );
     }
 
-    return _ArrowBounds(
+    return _BentBounds(
       minRow: minRow,
-      maxRow: maxRow,
       minColumn: minColumn,
-      maxColumn: maxColumn,
     );
-  }
-
-  double _boundsSize(
-    int min,
-    int max,
-    double cellSize,
-    double spacing,
-  ) {
-    final cells = max - min + 1;
-
-    return (cells * cellSize) +
-        ((cells - 1) * spacing);
   }
 
   Widget _buildExitAnimation(
@@ -298,7 +492,7 @@ class GameBoardWidget extends StatelessWidget {
   ) {
     return TweenAnimationBuilder<double>(
       key: ValueKey(
-        'failed-${arrow.hashCode}',
+        'failed-$arrow',
       ),
       tween: Tween(
         begin: 0,
@@ -334,6 +528,267 @@ class GameBoardWidget extends StatelessWidget {
     );
   }
 
+  double _arrowWidth(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    if (arrow.isBent) {
+      return _bentWidth(
+        arrow,
+        cellSize,
+        spacing,
+      );
+    }
+
+    if (arrow.direction ==
+            ArrowDirection.left ||
+        arrow.direction ==
+            ArrowDirection.right) {
+      return _arrowLength(
+        arrow,
+        cellSize,
+        spacing,
+      );
+    }
+
+    return cellSize;
+  }
+
+  double _arrowHeight(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    if (arrow.isBent) {
+      return _bentHeight(
+        arrow,
+        cellSize,
+        spacing,
+      );
+    }
+
+    if (arrow.direction ==
+            ArrowDirection.up ||
+        arrow.direction ==
+            ArrowDirection.down) {
+      return _arrowLength(
+        arrow,
+        cellSize,
+        spacing,
+      );
+    }
+
+    return cellSize;
+  }
+
+  double _arrowLength(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    return (arrow.length * cellSize) +
+        ((arrow.length - 1) * spacing);
+  }
+
+  double _bentWidth(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    var column = 0;
+    var minColumn = 0;
+    var maxColumn = 0;
+
+    for (final direction in arrow.path) {
+      switch (direction) {
+        case ArrowDirection.left:
+          column--;
+          break;
+
+        case ArrowDirection.right:
+          column++;
+          break;
+
+        case ArrowDirection.up:
+        case ArrowDirection.down:
+          break;
+      }
+
+      minColumn = math.min(
+        minColumn,
+        column,
+      );
+
+      maxColumn = math.max(
+        maxColumn,
+        column,
+      );
+    }
+
+    return ((maxColumn - minColumn + 1) *
+            cellSize) +
+        ((maxColumn - minColumn) *
+            spacing);
+  }
+
+  double _bentHeight(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+  ) {
+    var row = 0;
+    var minRow = 0;
+    var maxRow = 0;
+
+    for (final direction in arrow.path) {
+      switch (direction) {
+        case ArrowDirection.up:
+          row--;
+          break;
+
+        case ArrowDirection.down:
+          row++;
+          break;
+
+        case ArrowDirection.left:
+        case ArrowDirection.right:
+          break;
+      }
+
+      minRow = math.min(
+        minRow,
+        row,
+      );
+
+      maxRow = math.max(
+        maxRow,
+        row,
+      );
+    }
+
+    return ((maxRow - minRow + 1) *
+            cellSize) +
+        ((maxRow - minRow) *
+            spacing);
+  }
+
+  double _arrowLeft(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    if (arrow.isBent) {
+      return _bentLeft(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      );
+    }
+
+    if (arrow.direction ==
+        ArrowDirection.left) {
+      return padding +
+          (arrow.column -
+                  arrow.length +
+                  1) *
+              (cellSize + spacing);
+    }
+
+    return padding +
+        arrow.column *
+            (cellSize + spacing);
+  }
+
+  double _arrowTop(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    if (arrow.isBent) {
+      return _bentTop(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      );
+    }
+
+    if (arrow.direction ==
+        ArrowDirection.up) {
+      return padding +
+          (arrow.row -
+                  arrow.length +
+                  1) *
+              (cellSize + spacing);
+    }
+
+    return padding +
+        arrow.row *
+            (cellSize + spacing);
+  }
+
+  double _bentLeft(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    var column = 0;
+    var minColumn = 0;
+
+    for (final direction in arrow.path) {
+      if (direction ==
+          ArrowDirection.left) {
+        column--;
+      } else if (direction ==
+          ArrowDirection.right) {
+        column++;
+      }
+
+      minColumn = math.min(
+        minColumn,
+        column,
+      );
+    }
+
+    return padding +
+        (arrow.column + minColumn) *
+            (cellSize + spacing);
+  }
+
+  double _bentTop(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    var row = 0;
+    var minRow = 0;
+
+    for (final direction in arrow.path) {
+      if (direction ==
+          ArrowDirection.up) {
+        row--;
+      } else if (direction ==
+          ArrowDirection.down) {
+        row++;
+      }
+
+      minRow = math.min(
+        minRow,
+        row,
+      );
+    }
+
+    return padding +
+        (arrow.row + minRow) *
+            (cellSize + spacing);
+  }
+
   Offset _collisionOffset(
     Arrow arrow,
     double value,
@@ -345,16 +800,14 @@ class GameBoardWidget extends StatelessWidget {
     );
 
     final movement = value <= 0.5
-        ? value * 2 * collisionDistance
+        ? value *
+            2 *
+            collisionDistance
         : (1 - value) *
             2 *
             collisionDistance;
 
-    final direction = arrow.isBent
-        ? arrow.path.first
-        : arrow.direction;
-
-    switch (direction) {
+    switch (arrow.direction) {
       case ArrowDirection.up:
         return Offset(
           0,
@@ -382,16 +835,12 @@ class GameBoardWidget extends StatelessWidget {
   }
 }
 
-class _ArrowBounds {
-  const _ArrowBounds({
+class _BentBounds {
+  const _BentBounds({
     required this.minRow,
-    required this.maxRow,
     required this.minColumn,
-    required this.maxColumn,
   });
 
   final int minRow;
-  final int maxRow;
   final int minColumn;
-  final int maxColumn;
 }
