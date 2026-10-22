@@ -1,4 +1,4 @@
-name: Arrow Puzzle CI
+name: Arrow Puzzle Tests
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  flutter:
-    name: Flutter Test & Release APK
+  test:
+    name: Flutter Analyze & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -34,12 +34,3 @@ jobs:
 
       - name: Test
         run: flutter test
-
-      - name: Build Release APK
-        run: flutter build apk --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: arrow-puzzle-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
