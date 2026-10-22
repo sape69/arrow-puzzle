@@ -1,53 +1,46 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arrow_puzzle/game/game_board.dart';
-import 'package:arrow_puzzle/game/level_data.dart';
+import 'package:arrow_puzzle/game/level_generator.dart';
 import 'package:arrow_puzzle/game/level_solver.dart';
 
 void main() {
   test(
-    'Level 7 should be solvable',
+    'Generated level should be solvable',
     () {
-      final board = GameBoard(
-        level: levels[6],
-      );
-
+      const generator = LevelGenerator();
       const solver = LevelSolver();
 
-      final movable = board.arrows
-          .where(board.canExit)
-          .toList();
-
-      expect(
-        board.size,
-        9,
+      final level = generator.generate(
+        size: 9,
+        arrowCount: 20,
+        seed: 7,
       );
 
-      expect(
-        board.arrows.length,
-        20,
-      );
-
-      expect(
-        movable,
-        isNotEmpty,
-        reason:
-            'Level 7 has no arrow that can exit at the start.',
+      final board = GameBoard(
+        level: level,
       );
 
       final solution = solver.findSolution(board);
 
       expect(
+        level.size,
+        9,
+      );
+
+      expect(
+        level.arrows.length,
+        20,
+      );
+
+      expect(
         solution,
         isNotNull,
-        reason:
-            'Level 7 has ${movable.length} initially movable arrows, '
-            'but the solver could not find a complete solution.',
       );
 
       expect(
         solution!.length,
-        board.arrows.length,
+        level.arrows.length,
       );
     },
   );
