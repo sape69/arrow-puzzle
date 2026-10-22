@@ -17,17 +17,20 @@ void main() {
         seed: 7,
       );
 
-      final board = GameBoard();
-
-      board.arrows
-        ..clear()
-        ..addAll(level.arrows);
+      final board = GameBoard(
+        level: level,
+      );
 
       final solution = solver.findSolution(board);
 
       expect(
         level.arrows.length,
         greaterThan(0),
+      );
+
+      expect(
+        board.size,
+        9,
       );
 
       expect(
