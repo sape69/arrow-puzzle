@@ -1,35 +1,28 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arrow_puzzle/game/game_board.dart';
-import 'package:arrow_puzzle/game/level_generator.dart';
+import 'package:arrow_puzzle/game/level_data.dart';
 import 'package:arrow_puzzle/game/level_solver.dart';
 
 void main() {
   test(
-    'Generated level should be solvable',
+    'Level 7 should be solvable',
     () {
-      const generator = LevelGenerator();
-      const solver = LevelSolver();
-
-      final level = generator.generate(
-        size: 9,
-        arrowCount: 20,
-        seed: 7,
-      );
-
       final board = GameBoard(
-        level: level,
+        level: levels[6],
       );
+
+      const solver = LevelSolver();
 
       final solution = solver.findSolution(board);
 
       expect(
-        level.size,
+        board.size,
         9,
       );
 
       expect(
-        level.arrows.length,
+        board.arrows.length,
         20,
       );
 
@@ -40,7 +33,7 @@ void main() {
 
       expect(
         solution!.length,
-        level.arrows.length,
+        board.arrows.length,
       );
     },
   );
