@@ -88,13 +88,13 @@ class _StraightArrowPainter extends CustomPainter {
     );
 
     final headLength = math.min(
-      cellSize * 0.28,
-      14.0,
+      cellSize * 0.25,
+      13.0,
     );
 
     final headWidth = math.min(
-      cellSize * 0.18,
-      9.0,
+      cellSize * 0.16,
+      8.0,
     );
 
     final directionVector =
@@ -103,9 +103,10 @@ class _StraightArrowPainter extends CustomPainter {
     Offset start;
 
     if (length == 1) {
+      // Give a one-cell arrow a clearly visible shaft.
       start = tip -
           directionVector *
-              (cellSize * 0.16);
+              (cellSize * 0.42);
     } else {
       start = _pointAt(
         center,
@@ -117,7 +118,7 @@ class _StraightArrowPainter extends CustomPainter {
     final shaftEnd =
         tip -
         directionVector *
-            (headLength * 0.65);
+            (headLength * 0.55);
 
     final paint = Paint()
       ..color = color
@@ -148,16 +149,14 @@ class _StraightArrowPainter extends CustomPainter {
     int distance,
   ) {
     return Offset(
-      x + _directionVectorX(
-            direction,
-          ) *
-          distance *
-          step,
-      y + _directionVectorY(
-            direction,
-          ) *
-          distance *
-          step,
+      x +
+          _directionVectorX(direction) *
+              distance *
+              step,
+      y +
+          _directionVectorY(direction) *
+              distance *
+              step,
     );
   }
 
@@ -176,8 +175,10 @@ class _StraightArrowPainter extends CustomPainter {
     switch (direction) {
       case ArrowDirection.left:
         return -1;
+
       case ArrowDirection.right:
         return 1;
+
       case ArrowDirection.up:
       case ArrowDirection.down:
         return 0;
@@ -190,8 +191,10 @@ class _StraightArrowPainter extends CustomPainter {
     switch (direction) {
       case ArrowDirection.up:
         return -1;
+
       case ArrowDirection.down:
         return 1;
+
       case ArrowDirection.left:
       case ArrowDirection.right:
         return 0;
@@ -442,13 +445,13 @@ class _BentArrowPainter extends CustomPainter {
     ArrowDirection direction,
   ) {
     final headLength = math.min(
-      cellSize * 0.28,
-      14.0,
+      cellSize * 0.25,
+      13.0,
     );
 
     final headWidth = math.min(
-      cellSize * 0.18,
-      9.0,
+      cellSize * 0.16,
+      8.0,
     );
 
     final vector = _directionVector(
