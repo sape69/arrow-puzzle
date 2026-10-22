@@ -1,15 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arrow_puzzle/game/game_board.dart';
-import 'package:arrow_puzzle/game/level_data.dart';
 import 'package:arrow_puzzle/game/level_solver.dart';
+import 'package:arrow_puzzle/game/levels/level_7.dart';
 
 void main() {
   test(
     'Level 7 should be solvable',
     () {
       final board = GameBoard(
-        level: levels[6],
+        level: level7,
       );
 
       const solver = LevelSolver();
@@ -29,6 +29,8 @@ void main() {
       expect(
         solution,
         isNotNull,
+        reason:
+            'The generated Level 7 data is not solvable.',
       );
 
       expect(
