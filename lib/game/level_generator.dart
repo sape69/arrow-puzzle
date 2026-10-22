@@ -12,8 +12,9 @@ class LevelGenerator {
     int seed = 1,
   }) {
     final random = Random(seed);
+
     final arrows = <Arrow>[];
-    final available = <_Cell>[
+    final cells = <_Cell>[
       for (var row = 0; row < size; row++)
         for (var column = 0; column < size; column++)
           _Cell(
@@ -22,49 +23,33 @@ class LevelGenerator {
           ),
     ];
 
-    available.shuffle(random);
+    cells.shuffle(random);
 
-    for (final cell in available) {
+    for (final cell in cells) {
       if (arrows.length >= arrowCount) {
         break;
       }
 
-      final direction = _directionToEdge(
-        cell,
-        size,
-        random,
-      );
+      final directions = List<ArrowDirection>.from(
+        ArrowDirection.values,
+      )..shuffle(random);
 
-      final maxLength = _maxLength(
-        cell,
-        direction,
-        size,
-      );
+      for (final direction in directions) {
+        final arrow = Arrow(
+          row: cell.row,
+          column: cell.column,
+          direction: direction,
+        );
 
-      if (maxLength < 1) {
-        continue;
+        if (_canAddArrow(
+          arrow,
+          arrows,
+          size,
+        )) {
+          arrows.add(arrow);
+          break;
+        }
       }
-
-      final length = _randomLength(
-        maxLength,
-        random,
-      );
-
-      final arrow = Arrow(
-        row: cell.row,
-        column: cell.column,
-        direction: direction,
-        length: length,
-      );
-
-      if (_overlaps(
-        arrow,
-        arrows,
-      )) {
-        continue;
-      }
-
-      arrows.add(arrow);
     }
 
     return LevelData(
@@ -73,93 +58,58 @@ class LevelGenerator {
     );
   }
 
-  ArrowDirection _directionToEdge(
-    _Cell cell,
-    int size,
-    Random random,
-  ) {
-    final distances = <ArrowDirection, int>{
-      ArrowDirection.up: cell.row + 1,
-      ArrowDirection.right: size - cell.column,
-      ArrowDirection.down: size - cell.row,
-      ArrowDirection.left: cell.column + 1,
-    };
-
-    final minimum =
-        distances.values.reduce(min);
-
-    final directions = distances.entries
-        .where(
-          (entry) => entry.value == minimum,
-        )
-        .map(
-          (entry) => entry.key,
-        )
-        .toList();
-
-    return directions[
-        random.nextInt(directions.length)];
-  }
-
-  int _maxLength(
-    _Cell cell,
-    ArrowDirection direction,
+  bool _canAddArrow(
+    Arrow arrow,
+    List<Arrow> existing,
     int size,
   ) {
-    switch (direction) {
-      case ArrowDirection.up:
-        return cell.row + 1;
-
-      case ArrowDirection.right:
-        return size - cell.column;
-
-      case ArrowDirection.down:
-        return size - cell.row;
-
-      case ArrowDirection.left:
-        return cell.column + 1;
+    if (!_insideBoard(
+      arrow.row,
+      arrow.column,
+      size,
+    )) {
+      return false;
     }
-  }
 
-  int _randomLength(
-    int maxLength,
-    Random random,
-  ) {
-    final limit = min(
-      maxLength,
-      3,
+    final occupied = _occupiedCells(
+      arrow,
+      size,
     );
 
-    return 1 + random.nextInt(limit);
-  }
+    if (occupied.isEmpty) {
+      return false;
+    }
 
-  bool _overlaps(
-    Arrow arrow,
-    List<Arrow> arrows,
-  ) {
-    final occupied = _occupiedCells(arrow);
+    for (final other in existing) {
+      final otherCells = _occupiedCells(
+        other,
+        size,
+      );
 
-    for (final other in arrows) {
-      final otherCells =
-          _occupiedCells(other);
-
-      for (final cell in occupied) {
-        if (otherCells.contains(cell)) {
-          return true;
-        }
+      if (occupied.any(otherCells.contains)) {
+        return false;
       }
     }
 
-    return false;
+    return true;
   }
 
   Set<_Cell> _occupiedCells(
     Arrow arrow,
+    int size,
   ) {
     final cells = <_Cell>{};
 
     var row = arrow.row;
     var column = arrow.column;
+
+    if (!_insideBoard(
+      row,
+      column,
+      size,
+    )) {
+      return {};
+    }
 
     cells.add(
       _Cell(
@@ -187,6 +137,14 @@ class LevelGenerator {
           break;
       }
 
+      if (!_insideBoard(
+        row,
+        column,
+        size,
+      )) {
+        return {};
+      }
+
       cells.add(
         _Cell(
           row: row,
@@ -196,6 +154,17 @@ class LevelGenerator {
     }
 
     return cells;
+  }
+
+  bool _insideBoard(
+    int row,
+    int column,
+    int size,
+  ) {
+    return row >= 0 &&
+        row < size &&
+        column >= 0 &&
+        column < size;
   }
 }
 
