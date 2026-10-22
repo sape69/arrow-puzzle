@@ -51,144 +51,148 @@ class GameBoardWidget extends StatelessWidget {
     final cellSize =
         availableWidth / board.size;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(padding),
-          child: GridView.builder(
-            physics:
-                const NeverScrollableScrollPhysics(),
-            gridDelegate:
-                SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: board.size,
-              crossAxisSpacing: spacing,
-              mainAxisSpacing: spacing,
-            ),
-            itemCount: board.size * board.size,
-            itemBuilder: (context, index) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF21113B),
-                  borderRadius:
-                      BorderRadius.circular(8),
-                ),
-              );
-            },
-          ),
-        ),
-        ..._buildArrowWidgets(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (details) {
+        final arrow = _arrowAtPoint(
+          details.localPosition,
           cellSize,
           spacing,
           padding,
-        ),
-        if (exitingArrow != null)
-          _buildExitAnimation(
-            exitingArrow!,
+        );
+
+        if (arrow != null) {
+          onArrowTap(arrow);
+        }
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(padding),
+            child: GridView.builder(
+              physics:
+                  const NeverScrollableScrollPhysics(),
+              gridDelegate:
+                  SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: board.size,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+              ),
+              itemCount:
+                  board.size * board.size,
+              itemBuilder: (context, index) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color:
+                        const Color(0xFF21113B),
+                    borderRadius:
+                        BorderRadius.circular(8),
+                  ),
+                );
+              },
+            ),
+          ),
+          ..._buildArrowWidgets(
             cellSize,
             spacing,
             padding,
           ),
-      ],
+          if (exitingArrow != null)
+            _buildExitAnimation(
+              exitingArrow!,
+              cellSize,
+              spacing,
+              padding,
+            ),
+        ],
+      ),
     );
   }
 
-  List<Widget> _buildArrowWidgets(
+  Arrow? _arrowAtPoint(
+    Offset point,
     double cellSize,
     double spacing,
     double padding,
   ) {
-    final widgets = <Widget>[];
+    Arrow? closestArrow;
+    var closestDistance = double.infinity;
 
     for (final arrow in board.arrows) {
-      if (arrow == exitingArrow) {
+      if (arrow == exitingArrow ||
+          arrow == failedArrow) {
         continue;
       }
 
-      widgets.add(
-        _buildArrow(
-          arrow,
-          cellSize,
-          spacing,
-          padding,
-        ),
+      final left = _arrowLeft(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
       );
+
+      final top = _arrowTop(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      );
+
+      final width = _arrowWidth(
+        arrow,
+        cellSize,
+        spacing,
+      );
+
+      final height = _arrowHeight(
+        arrow,
+        cellSize,
+        spacing,
+      );
+
+      if (point.dx < left ||
+          point.dx > left + width ||
+          point.dy < top ||
+          point.dy > top + height) {
+        continue;
+      }
+
+      final localPoint = Offset(
+        point.dx - left,
+        point.dy - top,
+      );
+
+      final distance = _arrowDistance(
+        arrow,
+        localPoint,
+        cellSize,
+        spacing,
+      );
+
+      if (distance != null &&
+          distance < closestDistance) {
+        closestDistance = distance;
+        closestArrow = arrow;
+      }
     }
 
-    return widgets;
+    return closestArrow;
   }
 
-  Widget _buildArrow(
-    Arrow arrow,
-    double cellSize,
-    double spacing,
-    double padding,
-  ) {
-    final isFailed = failedArrow == arrow;
-
-    return Positioned(
-      left: _arrowLeft(
-        arrow,
-        cellSize,
-        spacing,
-        padding,
-      ),
-      top: _arrowTop(
-        arrow,
-        cellSize,
-        spacing,
-        padding,
-      ),
-      width: _arrowWidth(
-        arrow,
-        cellSize,
-        spacing,
-      ),
-      height: _arrowHeight(
-        arrow,
-        cellSize,
-        spacing,
-      ),
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTapDown: isFailed
-            ? null
-            : (details) {
-                if (_isOnArrow(
-                  arrow,
-                  details.localPosition,
-                  cellSize,
-                  spacing,
-                )) {
-                  onArrowTap(arrow);
-                }
-              },
-        child: isFailed
-            ? _buildFailedArrow(
-                arrow,
-                cellSize,
-              )
-            : _buildNormalArrow(
-                arrow,
-                cellSize,
-              ),
-      ),
-    );
-  }
-
-  bool _isOnArrow(
+  double? _arrowDistance(
     Arrow arrow,
     Offset point,
     double cellSize,
     double spacing,
   ) {
     final tolerance = math.max(
-      10.0,
-      cellSize * 0.16,
+      12.0,
+      cellSize * 0.18,
     );
 
     if (arrow.isBent) {
-      return _isOnBentArrow(
+      return _bentArrowDistance(
         arrow,
         point,
         cellSize,
@@ -197,7 +201,7 @@ class GameBoardWidget extends StatelessWidget {
       );
     }
 
-    return _isOnStraightArrow(
+    return _straightArrowDistance(
       arrow,
       point,
       cellSize,
@@ -206,7 +210,7 @@ class GameBoardWidget extends StatelessWidget {
     );
   }
 
-  bool _isOnStraightArrow(
+  double? _straightArrowDistance(
     Arrow arrow,
     Offset point,
     double cellSize,
@@ -275,10 +279,14 @@ class GameBoardWidget extends StatelessWidget {
       end,
     );
 
-    return distance <= tolerance;
+    if (distance > tolerance) {
+      return null;
+    }
+
+    return distance;
   }
 
-  bool _isOnBentArrow(
+  double? _bentArrowDistance(
     Arrow arrow,
     Offset point,
     double cellSize,
@@ -286,7 +294,6 @@ class GameBoardWidget extends StatelessWidget {
     double tolerance,
   ) {
     final step = cellSize + spacing;
-
     final bounds = _bentBounds(arrow);
 
     var column = -bounds.minColumn;
@@ -298,6 +305,8 @@ class GameBoardWidget extends StatelessWidget {
       (row * step) +
           (cellSize / 2),
     );
+
+    var closestDistance = double.infinity;
 
     for (final direction in arrow.path) {
       switch (direction) {
@@ -325,19 +334,24 @@ class GameBoardWidget extends StatelessWidget {
             (cellSize / 2),
       );
 
-      if (_distanceToSegment(
-            point,
-            previous,
-            current,
-          ) <=
-          tolerance) {
-        return true;
+      final distance = _distanceToSegment(
+        point,
+        previous,
+        current,
+      );
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
       }
 
       previous = current;
     }
 
-    return false;
+    if (closestDistance > tolerance) {
+      return null;
+    }
+
+    return closestDistance;
   }
 
   double _distanceToSegment(
@@ -412,6 +426,76 @@ class GameBoardWidget extends StatelessWidget {
     return _BentBounds(
       minRow: minRow,
       minColumn: minColumn,
+    );
+  }
+
+  List<Widget> _buildArrowWidgets(
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    final widgets = <Widget>[];
+
+    for (final arrow in board.arrows) {
+      if (arrow == exitingArrow) {
+        continue;
+      }
+
+      widgets.add(
+        _buildArrow(
+          arrow,
+          cellSize,
+          spacing,
+          padding,
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
+  Widget _buildArrow(
+    Arrow arrow,
+    double cellSize,
+    double spacing,
+    double padding,
+  ) {
+    final isFailed = failedArrow == arrow;
+
+    return Positioned(
+      left: _arrowLeft(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      ),
+      top: _arrowTop(
+        arrow,
+        cellSize,
+        spacing,
+        padding,
+      ),
+      width: _arrowWidth(
+        arrow,
+        cellSize,
+        spacing,
+      ),
+      height: _arrowHeight(
+        arrow,
+        cellSize,
+        spacing,
+      ),
+      child: IgnorePointer(
+        child: isFailed
+            ? _buildFailedArrow(
+                arrow,
+                cellSize,
+              )
+            : _buildNormalArrow(
+                arrow,
+                cellSize,
+              ),
+      ),
     );
   }
 
@@ -841,3 +925,11 @@ class _BentBounds {
   final int minRow;
   final int minColumn;
 }
+
+Tässä on nyt tärkeä ero: nuolten omat kosketuskuuntelijat on poistettu kokonaan. Siksi yksi nuoli ei voi enää vahingossa peittää toisen kosketusaluetta.
+
+Lisäksi jos kaksi nuolta ovat lähellä toisiaan, valitaan se, jonka todellinen viiva on lähimpänä sormen kosketuskohtaa.
+
+Tämä on mielestäni paljon oikeampi pohja ennen kuin tehdään Level 9 → 10 → 20 jne.
+
+Valmis → aja ensin "flutter analyze" ja sitten testaa Level 7–8:n nuolet.
