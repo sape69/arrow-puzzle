@@ -17,22 +17,7 @@ void main() {
       final solution = solver.findSolution(board);
 
       expect(solution, isNotNull);
-
-      print(
-        'Level 7 solution: '
-        '${solution!.length} moves',
-      );
-
-      for (var i = 0; i < solution.length; i++) {
-        final arrow = solution[i];
-
-        print(
-          '${i + 1}. '
-          'row=${arrow.row}, '
-          'column=${arrow.column}, '
-          'direction=${arrow.direction}',
-        );
-      }
+      expect(solution!.length, board.arrows.length);
     },
   );
 }
