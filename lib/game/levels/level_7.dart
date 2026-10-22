@@ -2,62 +2,153 @@ import '../arrow.dart';
 import '../level_data.dart';
 
 const level7 = LevelData(
-  size: 7,
+  size: 9,
   arrows: [
-    // Suoraan ylös ulos.
     Arrow(
-      row: 3,
+      row: 0,
       column: 1,
-      direction: ArrowDirection.up,
+      direction: ArrowDirection.right,
+      length: 4,
     ),
-
-    // Suoraan oikealle ulos.
+    Arrow(
+      row: 0,
+      column: 6,
+      direction: ArrowDirection.down,
+      length: 3,
+    ),
     Arrow(
       row: 1,
-      column: 2,
-      direction: ArrowDirection.right,
+      column: 0,
+      direction: ArrowDirection.down,
+      length: 4,
     ),
-
-    // Suoraan alas ulos.
+    Arrow(
+      row: 1,
+      column: 4,
+      direction: ArrowDirection.right,
+      length: 3,
+    ),
+    Arrow(
+      row: 1,
+      column: 8,
+      direction: ArrowDirection.down,
+      length: 4,
+    ),
+    Arrow(
+      row: 2,
+      column: 2,
+      direction: ArrowDirection.left,
+      length: 3,
+    ),
     Arrow(
       row: 2,
       column: 5,
       direction: ArrowDirection.down,
+      length: 3,
     ),
-
-    // Suoraan vasemmalle ulos.
     Arrow(
-      row: 5,
-      column: 4,
-      direction: ArrowDirection.left,
-    ),
-
-    // Pitkä vaakasuora nuoli.
-    Arrow(
-      row: 4,
+      row: 3,
       column: 1,
       direction: ArrowDirection.right,
-      length: 2,
+      length: 4,
     ),
-
-    // Pitkä pystysuora nuoli.
+    Arrow(
+      row: 3,
+      column: 7,
+      direction: ArrowDirection.left,
+      length: 3,
+    ),
+    Arrow.bent(
+      row: 3,
+      column: 4,
+      direction: ArrowDirection.down,
+      path: [
+        ArrowDirection.down,
+        ArrowDirection.down,
+        ArrowDirection.left,
+        ArrowDirection.left,
+      ],
+    ),
+    Arrow(
+      row: 4,
+      column: 0,
+      direction: ArrowDirection.right,
+      length: 3,
+    ),
+    Arrow(
+      row: 4,
+      column: 6,
+      direction: ArrowDirection.down,
+      length: 3,
+    ),
     Arrow(
       row: 5,
-      column: 6,
+      column: 2,
+      direction: ArrowDirection.right,
+      length: 3,
+    ),
+    Arrow(
+      row: 5,
+      column: 8,
+      direction: ArrowDirection.left,
+      length: 4,
+    ),
+    Arrow.bent(
+      row: 5,
+      column: 5,
+      direction: ArrowDirection.down,
+      path: [
+        ArrowDirection.down,
+        ArrowDirection.left,
+        ArrowDirection.left,
+        ArrowDirection.up,
+      ],
+    ),
+    Arrow(
+      row: 6,
+      column: 0,
       direction: ArrowDirection.up,
+      length: 3,
+    ),
+    Arrow(
+      row: 6,
+      column: 4,
+      direction: ArrowDirection.right,
+      length: 3,
+    ),
+    Arrow(
+      row: 7,
+      column: 1,
+      direction: ArrowDirection.down,
       length: 2,
     ),
-
-    // Bentti nuoli:
-    // oikealle -> alas -> oikealle.
-    Arrow.bent(
-      row: 0,
-      column: 3,
+    Arrow(
+      row: 7,
+      column: 6,
       direction: ArrowDirection.right,
+      length: 3,
+    ),
+    Arrow(
+      row: 8,
+      column: 0,
+      direction: ArrowDirection.right,
+      length: 5,
+    ),
+    Arrow(
+      row: 8,
+      column: 6,
+      direction: ArrowDirection.up,
+      length: 4,
+    ),
+    Arrow.bent(
+      row: 7,
+      column: 4,
+      direction: ArrowDirection.up,
       path: [
-        ArrowDirection.right,
+        ArrowDirection.up,
+        ArrowDirection.left,
+        ArrowDirection.left,
         ArrowDirection.down,
-        ArrowDirection.right,
       ],
     ),
   ],
