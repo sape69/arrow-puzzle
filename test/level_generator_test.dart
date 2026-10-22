@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arrow_puzzle/game/game_board.dart';
@@ -23,6 +24,34 @@ void main() {
       );
 
       final solution = solver.findSolution(board);
+
+      debugPrint('');
+      debugPrint('=== GENERATED LEVEL 7 ===');
+      debugPrint('size: ${level.size}');
+      debugPrint('arrows: ${level.arrows.length}');
+      debugPrint('');
+
+      for (var i = 0;
+          i < level.arrows.length;
+          i++) {
+        final arrow = level.arrows[i];
+
+        debugPrint(
+          'Arrow('
+          'row: ${arrow.row}, '
+          'column: ${arrow.column}, '
+          'direction: ArrowDirection.${arrow.direction.name}, '
+          'length: ${arrow.length},'
+          '),',
+        );
+      }
+
+      debugPrint('');
+      debugPrint(
+        'solution length: ${solution?.length ?? 0}',
+      );
+      debugPrint('==========================');
+      debugPrint('');
 
       expect(
         level.size,
