@@ -4,51 +4,53 @@ import '../level_data.dart';
 const level8 = LevelData(
   size: 7,
   arrows: [
-    // Tämä nuoli pääsee oikealle ulos.
+    // Testinuoli:
+    // Tämä on aluksi toisen nuolen estämä.
     Arrow(
       row: 1,
       column: 0,
       direction: ArrowDirection.right,
     ),
 
-    // Tämä nuoli on ensimmäisen nuolen poistumisreitillä.
+    // Estää ensimmäisen nuolen.
     Arrow(
       row: 1,
       column: 4,
       direction: ArrowDirection.down,
     ),
 
-    // Tämä nuoli pääsee suoraan ylös.
+    // Bentti nuoli omalla, täysin erillisellä reitillään.
+    Arrow.bent(
+      row: 0,
+      column: 6,
+      direction: ArrowDirection.down,
+      path: [
+        ArrowDirection.down,
+        ArrowDirection.down,
+        ArrowDirection.left,
+      ],
+    ),
+
+    // Suoraan ylös ulos.
     Arrow(
       row: 5,
       column: 1,
       direction: ArrowDirection.up,
     ),
 
-    // Tämä nuoli pääsee vasemmalle.
+    // Vasemmalle ulos.
     Arrow(
       row: 3,
       column: 5,
       direction: ArrowDirection.left,
     ),
 
-    // Pitkä nuoli, jonka reitti on vapaa.
+    // Pitkä vapaa nuoli.
     Arrow(
       row: 6,
       column: 2,
       direction: ArrowDirection.right,
       length: 2,
-    ),
-
-    // Bentti nuoli, jonka poistumisreitti on vapaa.
-    Arrow.bent(
-      row: 0,
-      column: 5,
-      direction: ArrowDirection.down,
-      path: [
-        ArrowDirection.down,
-        ArrowDirection.left,
-      ],
     ),
   ],
 );
