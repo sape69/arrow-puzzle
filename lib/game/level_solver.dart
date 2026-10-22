@@ -9,21 +9,13 @@ class LevelSolver {
   }
 
   List<Arrow>? findSolution(GameBoard board) {
-    final originalArrows = List<Arrow>.from(board.arrows);
-    final indexByArrow = <Arrow, int>{
-      for (var i = 0; i < originalArrows.length; i++)
-        originalArrows[i]: i,
-    };
-
-    final failedStates = <String>{};
     final solution = <Arrow>[];
+    final failedStates = <String>{};
 
     final solved = _search(
       board,
-      originalArrows,
-      indexByArrow,
-      failedStates,
       solution,
+      failedStates,
     );
 
     if (!solved) {
@@ -35,20 +27,14 @@ class LevelSolver {
 
   bool _search(
     GameBoard board,
-    List<Arrow> originalArrows,
-    Map<Arrow, int> indexByArrow,
-    Set<String> failedStates,
     List<Arrow> solution,
+    Set<String> failedStates,
   ) {
     if (board.arrows.isEmpty) {
       return true;
     }
 
-    final state = _stateKey(
-      board,
-      originalArrows,
-      indexByArrow,
-    );
+    final state = _stateKey(board);
 
     if (failedStates.contains(state)) {
       return false;
@@ -56,7 +42,7 @@ class LevelSolver {
 
     final movable = <Arrow>[];
 
-    for (final arrow in List<Arrow>.from(board.arrows)) {
+    for (final arrow in board.arrows) {
       if (board.canExit(arrow)) {
         movable.add(arrow);
       }
@@ -73,10 +59,8 @@ class LevelSolver {
 
       if (_search(
         board,
-        originalArrows,
-        indexByArrow,
-        failedStates,
         solution,
+        failedStates,
       )) {
         return true;
       }
@@ -89,23 +73,31 @@ class LevelSolver {
     return false;
   }
 
-  String _stateKey(
-    GameBoard board,
-    List<Arrow> originalArrows,
-    Map<Arrow, int> indexByArrow,
-  ) {
-    final remaining = <int>[];
+  String _stateKey(GameBoard board) {
+    final remaining = <String>[];
 
     for (final arrow in board.arrows) {
-      final index = indexByArrow[arrow];
-
-      if (index != null) {
-        remaining.add(index);
-      }
+      remaining.add(_arrowKey(arrow));
     }
 
     remaining.sort();
 
-    return remaining.join(',');
+    return remaining.join('|');
+  }
+
+  String _arrowKey(Arrow arrow) {
+    final path = arrow.path
+        .map(
+          (direction) => direction.name,
+        )
+        .join(',');
+
+    return [
+      arrow.row,
+      arrow.column,
+      arrow.direction.name,
+      arrow.length,
+      path,
+    ].join(':');
   }
 }
