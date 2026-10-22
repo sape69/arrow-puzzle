@@ -48,384 +48,47 @@ class GameBoardWidget extends StatelessWidget {
         (padding * 2) -
         (spacing * (board.size - 1));
 
-    final cellSize =
-        availableWidth / board.size;
+    final cellSize = availableWidth / board.size;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (details) {
-        final arrow = _arrowAtPoint(
-          details.localPosition,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(padding),
+          child: GridView.builder(
+            physics:
+                const NeverScrollableScrollPhysics(),
+            gridDelegate:
+                SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: board.size,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+            ),
+            itemCount: board.size * board.size,
+            itemBuilder: (context, index) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF21113B),
+                  borderRadius:
+                      BorderRadius.circular(8),
+                ),
+              );
+            },
+          ),
+        ),
+        ..._buildArrowWidgets(
           cellSize,
           spacing,
           padding,
-        );
-
-        if (arrow != null) {
-          onArrowTap(arrow);
-        }
-      },
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(padding),
-            child: GridView.builder(
-              physics:
-                  const NeverScrollableScrollPhysics(),
-              gridDelegate:
-                  SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: board.size,
-                crossAxisSpacing: spacing,
-                mainAxisSpacing: spacing,
-              ),
-              itemCount:
-                  board.size * board.size,
-              itemBuilder: (context, index) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color:
-                        const Color(0xFF21113B),
-                    borderRadius:
-                        BorderRadius.circular(8),
-                  ),
-                );
-              },
-            ),
-          ),
-          ..._buildArrowWidgets(
+        ),
+        if (exitingArrow != null)
+          _buildExitAnimation(
+            exitingArrow!,
             cellSize,
             spacing,
             padding,
           ),
-          if (exitingArrow != null)
-            _buildExitAnimation(
-              exitingArrow!,
-              cellSize,
-              spacing,
-              padding,
-            ),
-        ],
-      ),
-    );
-  }
-
-  Arrow? _arrowAtPoint(
-    Offset point,
-    double cellSize,
-    double spacing,
-    double padding,
-  ) {
-    Arrow? closestArrow;
-    var closestDistance = double.infinity;
-
-    for (final arrow in board.arrows) {
-      if (arrow == exitingArrow ||
-          arrow == failedArrow) {
-        continue;
-      }
-
-      final left = _arrowLeft(
-        arrow,
-        cellSize,
-        spacing,
-        padding,
-      );
-
-      final top = _arrowTop(
-        arrow,
-        cellSize,
-        spacing,
-        padding,
-      );
-
-      final width = _arrowWidth(
-        arrow,
-        cellSize,
-        spacing,
-      );
-
-      final height = _arrowHeight(
-        arrow,
-        cellSize,
-        spacing,
-      );
-
-      if (point.dx < left ||
-          point.dx > left + width ||
-          point.dy < top ||
-          point.dy > top + height) {
-        continue;
-      }
-
-      final localPoint = Offset(
-        point.dx - left,
-        point.dy - top,
-      );
-
-      final distance = _arrowDistance(
-        arrow,
-        localPoint,
-        cellSize,
-        spacing,
-      );
-
-      if (distance != null &&
-          distance < closestDistance) {
-        closestDistance = distance;
-        closestArrow = arrow;
-      }
-    }
-
-    return closestArrow;
-  }
-
-  double? _arrowDistance(
-    Arrow arrow,
-    Offset point,
-    double cellSize,
-    double spacing,
-  ) {
-    final tolerance = math.max(
-      12.0,
-      cellSize * 0.18,
-    );
-
-    if (arrow.isBent) {
-      return _bentArrowDistance(
-        arrow,
-        point,
-        cellSize,
-        spacing,
-        tolerance,
-      );
-    }
-
-    return _straightArrowDistance(
-      arrow,
-      point,
-      cellSize,
-      spacing,
-      tolerance,
-    );
-  }
-
-  double? _straightArrowDistance(
-    Arrow arrow,
-    Offset point,
-    double cellSize,
-    double spacing,
-    double tolerance,
-  ) {
-    final center = cellSize / 2;
-    final step = cellSize + spacing;
-
-    Offset start;
-    Offset end;
-
-    switch (arrow.direction) {
-      case ArrowDirection.right:
-        start = Offset(
-          center,
-          center,
-        );
-        end = Offset(
-          center +
-              ((arrow.length - 1) * step),
-          center,
-        );
-        break;
-
-      case ArrowDirection.left:
-        start = Offset(
-          center +
-              ((arrow.length - 1) * step),
-          center,
-        );
-        end = Offset(
-          center,
-          center,
-        );
-        break;
-
-      case ArrowDirection.down:
-        start = Offset(
-          center,
-          center,
-        );
-        end = Offset(
-          center,
-          center +
-              ((arrow.length - 1) * step),
-        );
-        break;
-
-      case ArrowDirection.up:
-        start = Offset(
-          center,
-          center +
-              ((arrow.length - 1) * step),
-        );
-        end = Offset(
-          center,
-          center,
-        );
-        break;
-    }
-
-    final distance = _distanceToSegment(
-      point,
-      start,
-      end,
-    );
-
-    if (distance > tolerance) {
-      return null;
-    }
-
-    return distance;
-  }
-
-  double? _bentArrowDistance(
-    Arrow arrow,
-    Offset point,
-    double cellSize,
-    double spacing,
-    double tolerance,
-  ) {
-    final step = cellSize + spacing;
-    final bounds = _bentBounds(arrow);
-
-    var column = -bounds.minColumn;
-    var row = -bounds.minRow;
-
-    var previous = Offset(
-      (column * step) +
-          (cellSize / 2),
-      (row * step) +
-          (cellSize / 2),
-    );
-
-    var closestDistance = double.infinity;
-
-    for (final direction in arrow.path) {
-      switch (direction) {
-        case ArrowDirection.up:
-          row--;
-          break;
-
-        case ArrowDirection.right:
-          column++;
-          break;
-
-        case ArrowDirection.down:
-          row++;
-          break;
-
-        case ArrowDirection.left:
-          column--;
-          break;
-      }
-
-      final current = Offset(
-        (column * step) +
-            (cellSize / 2),
-        (row * step) +
-            (cellSize / 2),
-      );
-
-      final distance = _distanceToSegment(
-        point,
-        previous,
-        current,
-      );
-
-      if (distance < closestDistance) {
-        closestDistance = distance;
-      }
-
-      previous = current;
-    }
-
-    if (closestDistance > tolerance) {
-      return null;
-    }
-
-    return closestDistance;
-  }
-
-  double _distanceToSegment(
-    Offset point,
-    Offset start,
-    Offset end,
-  ) {
-    final dx = end.dx - start.dx;
-    final dy = end.dy - start.dy;
-
-    if (dx == 0 && dy == 0) {
-      return (point - start).distance;
-    }
-
-    final lengthSquared =
-        (dx * dx) + (dy * dy);
-
-    var t =
-        ((point.dx - start.dx) * dx +
-                (point.dy - start.dy) * dy) /
-            lengthSquared;
-
-    t = t.clamp(0.0, 1.0);
-
-    final projection = Offset(
-      start.dx + (t * dx),
-      start.dy + (t * dy),
-    );
-
-    return (point - projection).distance;
-  }
-
-  _BentBounds _bentBounds(
-    Arrow arrow,
-  ) {
-    var row = 0;
-    var column = 0;
-
-    var minRow = 0;
-    var minColumn = 0;
-
-    for (final direction in arrow.path) {
-      switch (direction) {
-        case ArrowDirection.up:
-          row--;
-          break;
-
-        case ArrowDirection.right:
-          column++;
-          break;
-
-        case ArrowDirection.down:
-          row++;
-          break;
-
-        case ArrowDirection.left:
-          column--;
-          break;
-      }
-
-      minRow = math.min(
-        minRow,
-        row,
-      );
-
-      minColumn = math.min(
-        minColumn,
-        column,
-      );
-    }
-
-    return _BentBounds(
-      minRow: minRow,
-      minColumn: minColumn,
+      ],
     );
   }
 
@@ -462,6 +125,16 @@ class GameBoardWidget extends StatelessWidget {
   ) {
     final isFailed = failedArrow == arrow;
 
+    final arrowWidget = isFailed
+        ? _buildFailedArrow(
+            arrow,
+            cellSize,
+          )
+        : _buildNormalArrow(
+            arrow,
+            cellSize,
+          );
+
     return Positioned(
       left: _arrowLeft(
         arrow,
@@ -485,16 +158,12 @@ class GameBoardWidget extends StatelessWidget {
         cellSize,
         spacing,
       ),
-      child: IgnorePointer(
-        child: isFailed
-            ? _buildFailedArrow(
-                arrow,
-                cellSize,
-              )
-            : _buildNormalArrow(
-                arrow,
-                cellSize,
-              ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: isFailed
+            ? null
+            : () => onArrowTap(arrow),
+        child: arrowWidget,
       ),
     );
   }
@@ -686,11 +355,9 @@ class GameBoardWidget extends StatelessWidget {
         case ArrowDirection.left:
           column--;
           break;
-
         case ArrowDirection.right:
           column++;
           break;
-
         case ArrowDirection.up:
         case ArrowDirection.down:
           break;
@@ -709,8 +376,7 @@ class GameBoardWidget extends StatelessWidget {
 
     return ((maxColumn - minColumn + 1) *
             cellSize) +
-        ((maxColumn - minColumn) *
-            spacing);
+        ((maxColumn - minColumn) * spacing);
   }
 
   double _bentHeight(
@@ -727,11 +393,9 @@ class GameBoardWidget extends StatelessWidget {
         case ArrowDirection.up:
           row--;
           break;
-
         case ArrowDirection.down:
           row++;
           break;
-
         case ArrowDirection.left:
         case ArrowDirection.right:
           break;
@@ -750,8 +414,7 @@ class GameBoardWidget extends StatelessWidget {
 
     return ((maxRow - minRow + 1) *
             cellSize) +
-        ((maxRow - minRow) *
-            spacing);
+        ((maxRow - minRow) * spacing);
   }
 
   double _arrowLeft(
@@ -890,46 +553,13 @@ class GameBoardWidget extends StatelessWidget {
 
     switch (arrow.direction) {
       case ArrowDirection.up:
-        return Offset(
-          0,
-          -movement,
-        );
-
+        return Offset(0, -movement);
       case ArrowDirection.right:
-        return Offset(
-          movement,
-          0,
-        );
-
+        return Offset(movement, 0);
       case ArrowDirection.down:
-        return Offset(
-          0,
-          movement,
-        );
-
+        return Offset(0, movement);
       case ArrowDirection.left:
-        return Offset(
-          -movement,
-          0,
-        );
+        return Offset(-movement, 0);
     }
   }
 }
-
-class _BentBounds {
-  const _BentBounds({
-    required this.minRow,
-    required this.minColumn,
-  });
-
-  final int minRow;
-  final int minColumn;
-}
-
-Tässä on nyt tärkeä ero: nuolten omat kosketuskuuntelijat on poistettu kokonaan. Siksi yksi nuoli ei voi enää vahingossa peittää toisen kosketusaluetta.
-
-Lisäksi jos kaksi nuolta ovat lähellä toisiaan, valitaan se, jonka todellinen viiva on lähimpänä sormen kosketuskohtaa.
-
-Tämä on mielestäni paljon oikeampi pohja ennen kuin tehdään Level 9 → 10 → 20 jne.
-
-Valmis → aja ensin "flutter analyze" ja sitten testaa Level 7–8:n nuolet.
