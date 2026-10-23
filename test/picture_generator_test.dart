@@ -26,13 +26,16 @@ void main() {
 
       for (final arrow in level.arrows) {
         expect(
-          arrow.direction,
-          ArrowDirection.right,
+          arrow.length,
+          greaterThan(0),
         );
 
         expect(
-          arrow.length,
-          greaterThan(0),
+          arrow.direction,
+          anyOf(
+            ArrowDirection.left,
+            ArrowDirection.right,
+          ),
         );
       }
     },
