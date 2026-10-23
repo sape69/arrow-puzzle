@@ -3,30 +3,30 @@ import 'dart:io';
 import 'package:arrow_puzzle/game/level_generator.dart';
 
 void main(List<String> arguments) {
-  final level = _argument(
+  final levelArgument = _argument(
     arguments,
     '--level',
   );
 
-  final size = _argument(
+  final sizeArgument = _argument(
     arguments,
     '--size',
   );
 
-  final arrows = _argument(
+  final arrowsArgument = _argument(
     arguments,
     '--arrows',
   );
 
-  final seed = _argument(
+  final seedArgument = _argument(
     arguments,
     '--seed',
   );
 
-  if (level == null ||
-      size == null ||
-      arrows == null ||
-      seed == null) {
+  if (levelArgument == null ||
+      sizeArgument == null ||
+      arrowsArgument == null ||
+      seedArgument == null) {
     stderr.writeln(
       'Missing generator arguments.',
     );
@@ -34,10 +34,21 @@ void main(List<String> arguments) {
     return;
   }
 
-  final levelNumber = int.tryParse(level);
-  final boardSize = int.tryParse(size);
-  final arrowCount = int.tryParse(arrows);
-  final randomSeed = int.tryParse(seed);
+  final levelNumber = int.tryParse(
+    levelArgument,
+  );
+
+  final boardSize = int.tryParse(
+    sizeArgument,
+  );
+
+  final arrowCount = int.tryParse(
+    arrowsArgument,
+  );
+
+  final randomSeed = int.tryParse(
+    seedArgument,
+  );
 
   if (levelNumber == null ||
       boardSize == null ||
@@ -75,7 +86,7 @@ void main(List<String> arguments) {
     'Seed: $randomSeed',
   );
 
-  final level = generator.generate(
+  final generatedLevel = generator.generate(
     size: boardSize,
     arrowCount: arrowCount,
     seed: randomSeed,
@@ -107,13 +118,13 @@ void main(List<String> arguments) {
     'const level$levelNumber = LevelData(',
   );
   buffer.writeln(
-    '  size: ${level.size},',
+    '  size: ${generatedLevel.size},',
   );
   buffer.writeln(
     '  arrows: [',
   );
 
-  for (final arrow in level.arrows) {
+  for (final arrow in generatedLevel.arrows) {
     buffer.writeln(
       '    Arrow(',
     );
