@@ -35,8 +35,8 @@ jobs:
       - name: Test
         run: flutter test
 
-      - name: Upload generated Level 7
+      - name: Upload generated Level 8
         uses: actions/upload-artifact@v4
         with:
-          name: generated-level-7
-          path: build/generated/level_7.dart
+          name: generated-level-8
+          path: build/generated/level_8.dart
