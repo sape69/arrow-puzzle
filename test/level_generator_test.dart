@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arrow_puzzle/game/game_board.dart';
@@ -42,6 +44,75 @@ void main() {
       expect(
         solution!.length,
         24,
+      );
+
+      final outputDirectory = Directory(
+        'build/generated',
+      );
+
+      outputDirectory.createSync(
+        recursive: true,
+      );
+
+      final outputFile = File(
+        'build/generated/level_8.dart',
+      );
+
+      final buffer = StringBuffer();
+
+      buffer.writeln(
+        "import '../lib/game/arrow.dart';",
+      );
+      buffer.writeln(
+        "import '../lib/game/level_data.dart';",
+      );
+      buffer.writeln();
+      buffer.writeln(
+        'const level8 = LevelData(',
+      );
+      buffer.writeln(
+        '  size: ${level.size},',
+      );
+      buffer.writeln(
+        '  arrows: [',
+      );
+
+      for (final arrow in level.arrows) {
+        buffer.writeln(
+          '    Arrow(',
+        );
+        buffer.writeln(
+          '      row: ${arrow.row},',
+        );
+        buffer.writeln(
+          '      column: ${arrow.column},',
+        );
+        buffer.writeln(
+          '      direction: '
+          'ArrowDirection.${arrow.direction.name},',
+        );
+        buffer.writeln(
+          '      length: ${arrow.length},',
+        );
+        buffer.writeln(
+          '    ),',
+        );
+      }
+
+      buffer.writeln(
+        '  ],',
+      );
+      buffer.writeln(
+        ');',
+      );
+
+      outputFile.writeAsStringSync(
+        buffer.toString(),
+      );
+
+      expect(
+        outputFile.existsSync(),
+        isTrue,
       );
     },
   );
