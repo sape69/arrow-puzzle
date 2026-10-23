@@ -2,17 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arrow_puzzle/game/game_board.dart';
 import 'package:arrow_puzzle/game/level_solver.dart';
-import 'package:arrow_puzzle/game/levels/level_7.dart';
+import 'package:arrow_puzzle/game/levels/level_8.dart';
 
 void main() {
   test(
-    'Level 7 should be solvable',
+    'Level 8 should be solvable',
     () {
       final board = GameBoard(
-        level: level7,
+        level: level8,
       );
 
-      const expectedArrowCount = 20;
+      const expectedArrowCount = 24;
 
       const solver = LevelSolver();
 
@@ -20,14 +20,14 @@ void main() {
 
       expect(
         board.size,
-        9,
+        10,
       );
 
       expect(
         solution,
         isNotNull,
         reason:
-            'The generated Level 7 data is not solvable.',
+            'The generated Level 8 data is not solvable.',
       );
 
       expect(
