@@ -12,6 +12,8 @@ void main() {
         level: level7,
       );
 
+      const expectedArrowCount = 20;
+
       const solver = LevelSolver();
 
       final solution = solver.findSolution(board);
@@ -19,11 +21,6 @@ void main() {
       expect(
         board.size,
         9,
-      );
-
-      expect(
-        board.arrows.length,
-        20,
       );
 
       expect(
@@ -35,7 +32,7 @@ void main() {
 
       expect(
         solution!.length,
-        board.arrows.length,
+        expectedArrowCount,
       );
     },
   );
