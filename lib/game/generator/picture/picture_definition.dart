@@ -1,3 +1,5 @@
+import '../../arrow.dart';
+
 class PictureDefinition {
   const PictureDefinition({
     required this.name,
@@ -21,30 +23,58 @@ class PictureDefinition {
     int row,
     int column,
   ) {
+    return directionAt(
+          row,
+          column,
+        ) !=
+        null;
+  }
+
+  ArrowDirection? directionAt(
+    int row,
+    int column,
+  ) {
     if (row < 0 ||
         row >= height ||
         column < 0 ||
         column >= width) {
-      return false;
+      return null;
     }
 
-    return pattern[row][column] == '#';
+    final character = pattern[row][column];
+
+    switch (character) {
+      case '^':
+        return ArrowDirection.up;
+
+      case '>':
+        return ArrowDirection.right;
+
+      case 'v':
+        return ArrowDirection.down;
+
+      case '<':
+        return ArrowDirection.left;
+
+      default:
+        return null;
+    }
   }
 }
 
 const stellaCatPicture = PictureDefinition(
   name: 'Stella',
   pattern: [
-    '...#####...',
-    '..#######..',
-    '.#########.',
-    '.##..#..##.',
-    '###.....###',
-    '###########',
-    '###########',
-    '.#########.',
-    '..#######..',
-    '...#####...',
-    '...........',
+    '..^^...^^..',
+    '.^^^^.^^^^.',
+    '^^^^^^^^^^^',
+    '^^>^^^^^<^^',
+    '^^^.....^^^',
+    '^^.......^^',
+    '^^.>...<.^^',
+    '.^^.....^^.',
+    '.^^^^^^^^^.',
+    '..^^^^^^^..',
+    '...^^^^^...',
   ],
 );
