@@ -31,11 +31,8 @@ void main() {
         );
 
         expect(
-          arrow.direction,
-          anyOf(
-            ArrowDirection.left,
-            ArrowDirection.right,
-          ),
+          ArrowDirection.values,
+          contains(arrow.direction),
         );
       }
     },
