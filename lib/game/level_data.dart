@@ -18,7 +18,7 @@ class LevelData {
   final int size;
 }
 
-const List<LevelData> levels = [
+final List<LevelData> levels = [
   LevelData(
     size: 7,
     arrows: [
