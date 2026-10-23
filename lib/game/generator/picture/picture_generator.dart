@@ -12,56 +12,40 @@ class PictureGenerator {
     final arrows = <Arrow>[];
 
     for (var row = 0; row < picture.height; row++) {
-      var column = 0;
-      var segmentIndex = 0;
+      for (var column = 0; column < picture.width; column++) {
+        final direction = picture.directionAt(
+          row,
+          column,
+        );
 
-      while (column < picture.width) {
-        if (!picture.isFilled(row, column)) {
-          column++;
+        if (direction == null) {
           continue;
         }
 
-        final startColumn = column;
-
-        while (column < picture.width &&
-            picture.isFilled(row, column)) {
-          column++;
+        if (!_isArrowStart(
+          picture,
+          row,
+          column,
+          direction,
+        )) {
+          continue;
         }
 
-        final runLength = column - startColumn;
+        final length = _runLength(
+          picture,
+          row,
+          column,
+          direction,
+        );
 
-        var segmentStart = startColumn;
-        var remaining = runLength;
-
-        while (remaining > 0) {
-          final length = remaining >= 2 ? 2 : 1;
-
-          final pointsRight = segmentIndex.isEven;
-
-          if (pointsRight) {
-            arrows.add(
-              Arrow(
-                row: row,
-                column: segmentStart,
-                direction: ArrowDirection.right,
-                length: length,
-              ),
-            );
-          } else {
-            arrows.add(
-              Arrow(
-                row: row,
-                column: segmentStart + length - 1,
-                direction: ArrowDirection.left,
-                length: length,
-              ),
-            );
-          }
-
-          segmentStart += length;
-          remaining -= length;
-          segmentIndex++;
-        }
+        arrows.add(
+          Arrow(
+            row: row,
+            column: column,
+            direction: direction,
+            length: length,
+          ),
+        );
       }
     }
 
@@ -71,6 +55,106 @@ class PictureGenerator {
     );
   }
 
+  bool _isArrowStart(
+    PictureDefinition picture,
+    int row,
+    int column,
+    ArrowDirection direction,
+  ) {
+    final previous = _move(
+      row,
+      column,
+      _opposite(direction),
+    );
+
+    return picture.directionAt(
+          previous.row,
+          previous.column,
+        ) !=
+        direction;
+  }
+
+  int _runLength(
+    PictureDefinition picture,
+    int row,
+    int column,
+    ArrowDirection direction,
+  ) {
+    var length = 1;
+
+    var current = _move(
+      row,
+      column,
+      direction,
+    );
+
+    while (picture.directionAt(
+          current.row,
+          current.column,
+        ) ==
+        direction) {
+      length++;
+
+      current = _move(
+        current.row,
+        current.column,
+        direction,
+      );
+    }
+
+    return length;
+  }
+
+  ArrowDirection _opposite(
+    ArrowDirection direction,
+  ) {
+    switch (direction) {
+      case ArrowDirection.up:
+        return ArrowDirection.down;
+
+      case ArrowDirection.right:
+        return ArrowDirection.left;
+
+      case ArrowDirection.down:
+        return ArrowDirection.up;
+
+      case ArrowDirection.left:
+        return ArrowDirection.right;
+    }
+  }
+
+  _Position _move(
+    int row,
+    int column,
+    ArrowDirection direction,
+  ) {
+    switch (direction) {
+      case ArrowDirection.up:
+        return _Position(
+          row: row - 1,
+          column: column,
+        );
+
+      case ArrowDirection.right:
+        return _Position(
+          row: row,
+          column: column + 1,
+        );
+
+      case ArrowDirection.down:
+        return _Position(
+          row: row + 1,
+          column: column,
+        );
+
+      case ArrowDirection.left:
+        return _Position(
+          row: row,
+          column: column - 1,
+        );
+    }
+  }
+
   int _boardSize(
     PictureDefinition picture,
   ) {
@@ -78,4 +162,14 @@ class PictureGenerator {
         ? picture.height
         : picture.width;
   }
+}
+
+class _Position {
+  const _Position({
+    required this.row,
+    required this.column,
+  });
+
+  final int row;
+  final int column;
 }
