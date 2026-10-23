@@ -1,0 +1,60 @@
+name: Generate Puzzle Level
+
+on:
+  workflow_dispatch:
+    inputs:
+      level:
+        description: "Level number"
+        required: true
+        default: "9"
+
+      size:
+        description: "Board size"
+        required: true
+        default: "10"
+
+      arrows:
+        description: "Number of arrows"
+        required: true
+        default: "26"
+
+      seed:
+        description: "Random seed"
+        required: true
+        default: "9"
+
+jobs:
+  generate:
+    name: Generate Level
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Create Android project
+        run: flutter create --platforms=android .
+
+      - name: Generate level
+        run: |
+          mkdir -p build/generated
+
+          dart run tool/generate_level.dart \
+            --level ${{ inputs.level }} \
+            --size ${{ inputs.size }} \
+            --arrows ${{ inputs.arrows }} \
+            --seed ${{ inputs.seed }}
+
+      - name: Upload generated level
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-level-${{ inputs.level }}
+          path: build/generated/level_${{ inputs.level }}.dart
