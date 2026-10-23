@@ -13,6 +13,7 @@ class PictureGenerator {
 
     for (var row = 0; row < picture.height; row++) {
       var column = 0;
+      var segmentIndex = 0;
 
       while (column < picture.width) {
         if (!picture.isFilled(row, column)) {
@@ -27,16 +28,40 @@ class PictureGenerator {
           column++;
         }
 
-        final length = column - startColumn;
+        final runLength = column - startColumn;
 
-        arrows.add(
-          Arrow(
-            row: row,
-            column: startColumn,
-            direction: ArrowDirection.right,
-            length: length,
-          ),
-        );
+        var segmentStart = startColumn;
+        var remaining = runLength;
+
+        while (remaining > 0) {
+          final length = remaining >= 2 ? 2 : 1;
+
+          final pointsRight = segmentIndex.isEven;
+
+          if (pointsRight) {
+            arrows.add(
+              Arrow(
+                row: row,
+                column: segmentStart,
+                direction: ArrowDirection.right,
+                length: length,
+              ),
+            );
+          } else {
+            arrows.add(
+              Arrow(
+                row: row,
+                column: segmentStart + length - 1,
+                direction: ArrowDirection.left,
+                length: length,
+              ),
+            );
+          }
+
+          segmentStart += length;
+          remaining -= length;
+          segmentIndex++;
+        }
       }
     }
 
