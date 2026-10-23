@@ -6,6 +6,7 @@ import 'levels/level_5.dart';
 import 'levels/level_6.dart';
 import 'levels/level_7.dart';
 import 'levels/level_8.dart';
+import 'levels/level_9.dart';
 import 'levels/level_10.dart';
 
 class LevelData {
@@ -91,5 +92,6 @@ final List<LevelData> levels = [
   level6,
   level7,
   level8,
+  level9,
   level10,
 ];
