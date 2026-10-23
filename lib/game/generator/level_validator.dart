@@ -1,3 +1,4 @@
+import '../arrow.dart';
 import '../game_board.dart';
 import '../level_data.dart';
 import '../level_solver.dart';
@@ -5,7 +6,7 @@ import '../level_solver.dart';
 class LevelValidator {
   const LevelValidator();
 
-  List<dynamic>? findSolution(LevelData level) {
+  List<Arrow>? findSolution(LevelData level) {
     final board = GameBoard(
       level: level,
     );
