@@ -74,17 +74,21 @@ class ReverseSolutionBuilder {
         direction,
       );
 
-      if (!_isInsideBoardCell(
+      final blockingArrow = _findBlockingArrow(
         current,
         remaining,
         arrow,
-      )) {
-        return true;
+      );
+
+      if (blockingArrow != null) {
+        return false;
       }
+
+      return true;
     }
   }
 
-  bool _isInsideBoardCell(
+  Arrow? _findBlockingArrow(
     GridCell cell,
     List<Arrow> arrows,
     Arrow ignoredArrow,
@@ -99,10 +103,10 @@ class ReverseSolutionBuilder {
       );
 
       if (cells.contains(cell)) {
-        return true;
+        return arrow;
       }
     }
 
-    return false;
+    return null;
   }
 }
