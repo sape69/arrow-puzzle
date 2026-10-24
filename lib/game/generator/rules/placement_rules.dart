@@ -47,6 +47,28 @@ class PlacementRules {
     return true;
   }
 
+  bool canPlaceAll(
+    List<Arrow> arrows, {
+    int minimumDistance = 1,
+  }) {
+    for (var i = 0; i < arrows.length; i++) {
+      final candidate = arrows[i];
+
+      final existing = arrows
+          .sublist(0, i);
+
+      if (!canPlace(
+        candidate,
+        existing,
+        minimumDistance: minimumDistance,
+      )) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   bool hasOverlap(
     Arrow candidate,
     List<Arrow> existing,
