@@ -74,20 +74,26 @@ class ReverseSolutionBuilder {
         direction,
       );
 
-      if (!_isInside(
+      if (!_isInsideBoardCell(
         current,
         remaining,
+        arrow,
       )) {
         return true;
       }
     }
   }
 
-  bool _isInside(
+  bool _isInsideBoardCell(
     GridCell cell,
     List<Arrow> arrows,
+    Arrow ignoredArrow,
   ) {
     for (final arrow in arrows) {
+      if (arrow == ignoredArrow) {
+        continue;
+      }
+
       final cells = _geometry.cells(
         arrow,
       );
