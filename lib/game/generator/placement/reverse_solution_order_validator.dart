@@ -1,5 +1,6 @@
 import '../../arrow.dart';
 import '../geometry/arrow_geometry.dart';
+import 'reverse_solution_order.dart';
 
 class ReverseSolutionOrderValidator {
 const ReverseSolutionOrderValidator({
