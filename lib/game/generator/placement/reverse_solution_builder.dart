@@ -1,5 +1,6 @@
 import '../../arrow.dart';
 import '../geometry/arrow_geometry.dart';
+import 'reverse_solution_plan.dart';
 
 class ReverseSolutionBuilder {
   const ReverseSolutionBuilder({
@@ -8,12 +9,14 @@ class ReverseSolutionBuilder {
 
   final ArrowGeometry _geometry;
 
-  List<Arrow> build(
+  ReverseSolutionPlan build(
     List<Arrow> arrows, {
     int? boardSize,
   }) {
     if (arrows.isEmpty) {
-      return const [];
+      return const ReverseSolutionPlan(
+        arrows: [],
+      );
     }
 
     final size = boardSize ?? _inferBoardSize(arrows);
@@ -24,7 +27,10 @@ class ReverseSolutionBuilder {
       );
     }
 
-    final remaining = List<Arrow>.from(arrows);
+    final remaining = List<Arrow>.from(
+      arrows,
+    );
+
     final solution = <Arrow>[];
 
     while (remaining.isNotEmpty) {
@@ -46,7 +52,9 @@ class ReverseSolutionBuilder {
       remaining.remove(selected);
     }
 
-    return solution;
+    return ReverseSolutionPlan(
+      arrows: solution,
+    );
   }
 
   List<Arrow> _findRemovableArrows(
