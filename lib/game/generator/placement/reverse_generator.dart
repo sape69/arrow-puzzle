@@ -6,6 +6,7 @@ import '../geometry/arrow_geometry.dart';
 import '../rules/placement_rules.dart';
 import 'placement_candidate.dart';
 import 'reverse_arrow_factory.dart';
+import 'reverse_placement_strategy.dart';
 
 class ReverseGenerator {
   const ReverseGenerator({
@@ -13,19 +14,24 @@ class ReverseGenerator {
     PlacementRules rules = const PlacementRules(),
     ReverseArrowFactory arrowFactory =
         const ReverseArrowFactory(),
+    ReversePlacementStrategy placementStrategy =
+        const ReversePlacementStrategy(),
   })  : _geometry = geometry,
         _rules = rules,
-        _arrowFactory = arrowFactory;
+        _arrowFactory = arrowFactory,
+        _placementStrategy = placementStrategy;
 
   final ArrowGeometry _geometry;
   final PlacementRules _rules;
   final ReverseArrowFactory _arrowFactory;
+  final ReversePlacementStrategy _placementStrategy;
 
   LevelData generate({
     required int size,
     required int arrowCount,
     required Random random,
     int maxAttemptsPerArrow = 100,
+    int maxLength = 3,
   }) {
     if (size < 1) {
       throw ArgumentError(
@@ -41,36 +47,74 @@ class ReverseGenerator {
 
     if (maxAttemptsPerArrow < 1) {
       throw ArgumentError(
-        'Maximum attempts must be positive.',
+        'Maximum attempts per arrow must be positive.',
       );
     }
 
+    if (maxLength < 1) {
+      throw ArgumentError(
+        'Maximum arrow length must be positive.',
+      );
+    }
+
+    for (var restart = 0; restart < 20; restart++) {
+      final arrows = _buildLevel(
+        size: size,
+        arrowCount: arrowCount,
+        random: random,
+        maxAttemptsPerArrow: maxAttemptsPerArrow,
+        maxLength: maxLength,
+      );
+
+      if (arrows != null) {
+        return LevelData(
+          size: size,
+          arrows: arrows,
+        );
+      }
+    }
+
+    throw StateError(
+      'Could not generate a reverse level with '
+      '$arrowCount arrows on a ${size}x$size board.',
+    );
+  }
+
+  List<Arrow>? _buildLevel({
+    required int size,
+    required int arrowCount,
+    required Random random,
+    required int maxAttemptsPerArrow,
+    required int maxLength,
+  }) {
     final arrows = <Arrow>[];
 
-    for (var index = 0; index < arrowCount; index++) {
-      final candidate = _findCandidate(
+    for (var index = 0;
+        index < arrowCount;
+        index++) {
+      final candidate =
+          _findCandidate(
         size: size,
         existing: arrows,
         random: random,
         maxAttempts: maxAttemptsPerArrow,
+        maxLength: maxLength,
       );
 
       if (candidate == null) {
-        throw StateError(
-          'Could not place arrow ${index + 1} '
-          'of $arrowCount.',
-        );
+        return null;
       }
 
-      arrows.add(
-        candidate.arrow,
-      );
+      arrows.add(candidate.arrow);
     }
 
-    return LevelData(
-      size: size,
-      arrows: arrows,
-    );
+    if (!_rules.canPlaceAll(
+      arrows,
+    )) {
+      return null;
+    }
+
+    return arrows;
   }
 
   PlacementCandidate? _findCandidate({
@@ -78,69 +122,50 @@ class ReverseGenerator {
     required List<Arrow> existing,
     required Random random,
     required int maxAttempts,
+    required int maxLength,
   }) {
-    final candidates = <PlacementCandidate>[];
-
-    for (var attempt = 0;
-        attempt < maxAttempts;
-        attempt++) {
-      final arrow = _arrowFactory.create(
-        boardSize: size,
-        random: random,
-      );
-
-      if (!_geometry.isValidPath(
-        arrow,
-        size,
-      )) {
-        continue;
-      }
-
-      if (!_rules.canPlace(
-        arrow,
-        existing,
-      )) {
-        continue;
-      }
-
-      candidates.add(
-        PlacementCandidate(
-          arrow: arrow,
-          priority: _priority(
-            arrow,
-            size,
-          ),
-        ),
-      );
-    }
-
-    if (candidates.isEmpty) {
-      return null;
-    }
-
-    candidates.sort(
-      (first, second) =>
-          second.priority.compareTo(
-        first.priority,
-      ),
+    return _placementStrategy.findCandidate(
+      boardSize: size,
+      existing: existing,
+      random: random,
+      maxAttempts: maxAttempts,
+      maxLength: maxLength,
     );
-
-    final bestPriority =
-        candidates.first.priority;
-
-    final best = candidates
-        .where(
-          (candidate) =>
-              candidate.priority == bestPriority,
-        )
-        .toList();
-
-    return best[
-      random.nextInt(best.length)
-    ];
   }
 
-  int _priority(
+  Arrow _createFallbackCandidate({
+    required int size,
+    required Random random,
+    required ArrowDirection direction,
+    required int maxLength,
+  }) {
+    return _arrowFactory.create(
+      boardSize: size,
+      random: random,
+      exitDirection: direction,
+      maxLength: maxLength,
+    );
+  }
+
+  bool _isValidCandidate(
+    Arrow candidate,
+    List<Arrow> existing,
+    int size,
+  ) {
+    if (!_geometry.isValidPath(
+      candidate,
+      size,
+    )) {
+      return false;
+    }
+
+    return _rules.canPlace(
+      candidate,
+      existing,
+    );
+  }
+
+  int _distanceToEdge(
     Arrow arrow,
     int size,
   ) {
@@ -148,37 +173,20 @@ class ReverseGenerator {
       arrow,
     );
 
-    final distanceToEdge =
-        _distanceToEdge(
-      tip.row,
-      tip.column,
-      size,
-      _geometry.exitDirection(
-        arrow,
-      ),
-    );
-
-    return 100 - distanceToEdge;
-  }
-
-  int _distanceToEdge(
-    int row,
-    int column,
-    int size,
-    ArrowDirection direction,
-  ) {
-    switch (direction) {
+    switch (_geometry.exitDirection(
+      arrow,
+    )) {
       case ArrowDirection.up:
-        return row;
+        return tip.row;
 
       case ArrowDirection.right:
-        return size - 1 - column;
+        return size - 1 - tip.column;
 
       case ArrowDirection.down:
-        return size - 1 - row;
+        return size - 1 - tip.row;
 
       case ArrowDirection.left:
-        return column;
+        return tip.column;
     }
   }
 }
