@@ -8,6 +8,7 @@ class ReverseArrowFactory {
   Arrow create({
     required int boardSize,
     required Random random,
+    ArrowDirection? exitDirection,
     int maxLength = 3,
   }) {
     if (boardSize < 1) {
@@ -22,22 +23,22 @@ class ReverseArrowFactory {
       );
     }
 
-    final row = random.nextInt(
-      boardSize,
-    );
+    final direction = exitDirection ??
+        ArrowDirection.values[
+          random.nextInt(
+            ArrowDirection.values.length,
+          )
+        ];
 
-    final column = random.nextInt(
-      boardSize,
+    final tip = _randomTipPosition(
+      boardSize: boardSize,
+      direction: direction,
+      random: random,
     );
-
-    final direction = ArrowDirection
-        .values[random.nextInt(
-      ArrowDirection.values.length,
-    )];
 
     final availableLength = _availableLength(
-      row: row,
-      column: column,
+      row: tip.row,
+      column: tip.column,
       direction: direction,
       boardSize: boardSize,
     );
@@ -52,12 +53,84 @@ class ReverseArrowFactory {
           actualMaxLength,
         );
 
-    return Arrow(
-      row: row,
-      column: column,
+    final start = _startPosition(
+      tip: tip,
       direction: direction,
       length: length,
     );
+
+    return Arrow(
+      row: start.row,
+      column: start.column,
+      direction: direction,
+      length: length,
+    );
+  }
+
+  _Position _randomTipPosition({
+    required int boardSize,
+    required ArrowDirection direction,
+    required Random random,
+  }) {
+    switch (direction) {
+      case ArrowDirection.up:
+        return _Position(
+          row: random.nextInt(boardSize),
+          column: random.nextInt(boardSize),
+        );
+
+      case ArrowDirection.right:
+        return _Position(
+          row: random.nextInt(boardSize),
+          column: random.nextInt(boardSize),
+        );
+
+      case ArrowDirection.down:
+        return _Position(
+          row: random.nextInt(boardSize),
+          column: random.nextInt(boardSize),
+        );
+
+      case ArrowDirection.left:
+        return _Position(
+          row: random.nextInt(boardSize),
+          column: random.nextInt(boardSize),
+        );
+    }
+  }
+
+  _Position _startPosition({
+    required _Position tip,
+    required ArrowDirection direction,
+    required int length,
+  }) {
+    final offset = length - 1;
+
+    switch (direction) {
+      case ArrowDirection.up:
+        return _Position(
+          row: tip.row + offset,
+          column: tip.column,
+        );
+
+      case ArrowDirection.right:
+        return _Position(
+          row: tip.row,
+          column: tip.column - offset,
+        );
+
+      case ArrowDirection.down:
+        return _Position(
+          row: tip.row - offset,
+          column: tip.column,
+        );
+
+      case ArrowDirection.left:
+        return _Position(
+          row: tip.row,
+          column: tip.column + offset,
+        );
+    }
   }
 
   int _availableLength({
@@ -80,4 +153,14 @@ class ReverseArrowFactory {
         return column + 1;
     }
   }
+}
+
+class _Position {
+  const _Position({
+    required this.row,
+    required this.column,
+  });
+
+  final int row;
+  final int column;
 }
