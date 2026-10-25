@@ -2,28 +2,19 @@ import 'dart:math';
 
 import '../../arrow.dart';
 import '../../level_data.dart';
-import '../geometry/arrow_geometry.dart';
 import '../rules/placement_rules.dart';
 import 'placement_candidate.dart';
-import 'reverse_arrow_factory.dart';
 import 'reverse_placement_strategy.dart';
 
 class ReverseGenerator {
   const ReverseGenerator({
-    ArrowGeometry geometry = const ArrowGeometry(),
     PlacementRules rules = const PlacementRules(),
-    ReverseArrowFactory arrowFactory =
-        const ReverseArrowFactory(),
     ReversePlacementStrategy placementStrategy =
         const ReversePlacementStrategy(),
-  })  : _geometry = geometry,
-        _rules = rules,
-        _arrowFactory = arrowFactory,
+  })  : _rules = rules,
         _placementStrategy = placementStrategy;
 
-  final ArrowGeometry _geometry;
   final PlacementRules _rules;
-  final ReverseArrowFactory _arrowFactory;
   final ReversePlacementStrategy _placementStrategy;
 
   LevelData generate({
@@ -92,8 +83,7 @@ class ReverseGenerator {
     for (var index = 0;
         index < arrowCount;
         index++) {
-      final candidate =
-          _findCandidate(
+      final candidate = _findCandidate(
         size: size,
         existing: arrows,
         random: random,
@@ -108,9 +98,7 @@ class ReverseGenerator {
       arrows.add(candidate.arrow);
     }
 
-    if (!_rules.canPlaceAll(
-      arrows,
-    )) {
+    if (!_rules.canPlaceAll(arrows)) {
       return null;
     }
 
@@ -131,62 +119,5 @@ class ReverseGenerator {
       maxAttempts: maxAttempts,
       maxLength: maxLength,
     );
-  }
-
-  Arrow _createFallbackCandidate({
-    required int size,
-    required Random random,
-    required ArrowDirection direction,
-    required int maxLength,
-  }) {
-    return _arrowFactory.create(
-      boardSize: size,
-      random: random,
-      exitDirection: direction,
-      maxLength: maxLength,
-    );
-  }
-
-  bool _isValidCandidate(
-    Arrow candidate,
-    List<Arrow> existing,
-    int size,
-  ) {
-    if (!_geometry.isValidPath(
-      candidate,
-      size,
-    )) {
-      return false;
-    }
-
-    return _rules.canPlace(
-      candidate,
-      existing,
-    );
-  }
-
-  int _distanceToEdge(
-    Arrow arrow,
-    int size,
-  ) {
-    final tip = _geometry.tip(
-      arrow,
-    );
-
-    switch (_geometry.exitDirection(
-      arrow,
-    )) {
-      case ArrowDirection.up:
-        return tip.row;
-
-      case ArrowDirection.right:
-        return size - 1 - tip.column;
-
-      case ArrowDirection.down:
-        return size - 1 - tip.row;
-
-      case ArrowDirection.left:
-        return tip.column;
-    }
   }
 }
