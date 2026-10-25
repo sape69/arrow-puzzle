@@ -81,21 +81,20 @@ void main() {
         random: Random(4),
       );
 
-      final solution =
-          solutionBuilder.build(
+      final plan = solutionBuilder.build(
         level.arrows,
         boardSize: level.size,
       );
 
       expect(
-        solution.length,
+        plan.length,
         level.arrows.length,
       );
 
       expect(
         solutionValidator.isValid(
           arrows: level.arrows,
-          solutionOrder: solution,
+          solutionOrder: plan.orderedArrows,
           boardSize: level.size,
         ),
         isTrue,
