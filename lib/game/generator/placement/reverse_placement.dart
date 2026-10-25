@@ -62,6 +62,7 @@ class ReversePlacement {
       if (!_canLeave(
         arrow,
         simulated,
+        boardSize,
       )) {
         return false;
       }
@@ -75,6 +76,7 @@ class ReversePlacement {
   bool _canLeave(
     Arrow arrow,
     List<Arrow> arrows,
+    int boardSize,
   ) {
     final tip = _geometry.tip(
       arrow,
@@ -94,10 +96,7 @@ class ReversePlacement {
 
       if (!_geometry.isInside(
         current,
-        _boardSizeFromArrows(
-          current,
-          arrows,
-        ),
+        boardSize,
       )) {
         return true;
       }
@@ -114,36 +113,5 @@ class ReversePlacement {
         }
       }
     }
-  }
-
-  int _boardSizeFromArrows(
-    GridCell current,
-    List<Arrow> arrows,
-  ) {
-    var maximum = 0;
-
-    for (final arrow in arrows) {
-      for (final cell in _geometry.cells(
-        arrow,
-      )) {
-        maximum = maximum > cell.row
-            ? maximum
-            : cell.row;
-
-        maximum = maximum > cell.column
-            ? maximum
-            : cell.column;
-      }
-    }
-
-    maximum = maximum > current.row
-        ? maximum
-        : current.row;
-
-    maximum = maximum > current.column
-        ? maximum
-        : current.column;
-
-    return maximum + 1;
   }
 }
