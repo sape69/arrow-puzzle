@@ -86,7 +86,8 @@ random: Random(seed),
 );
 
 test(
-'solution generator should produce the same level for the same seed',
+'solution generator should produce the same level '
+'for the same seed',
 () {
 final first = generator.generate(
 size: 10,
@@ -106,9 +107,41 @@ random: Random(12345),
   );
 
   expect(
-    first.arrows,
-    equals(second.arrows),
+    first.arrows.length,
+    second.arrows.length,
   );
+
+  for (var index = 0;
+      index < first.arrows.length;
+      index++) {
+    final firstArrow = first.arrows[index];
+    final secondArrow = second.arrows[index];
+
+    expect(
+      firstArrow.row,
+      secondArrow.row,
+    );
+
+    expect(
+      firstArrow.column,
+      secondArrow.column,
+    );
+
+    expect(
+      firstArrow.direction,
+      secondArrow.direction,
+    );
+
+    expect(
+      firstArrow.length,
+      secondArrow.length,
+    );
+
+    expect(
+      firstArrow.path,
+      equals(secondArrow.path),
+    );
+  }
 },
 
 );
