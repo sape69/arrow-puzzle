@@ -9,61 +9,76 @@ class ReverseSolutionBuilder {
   final ArrowGeometry _geometry;
 
   List<Arrow> build(
-    List<Arrow> arrows,
-  ) {
+    List<Arrow> arrows, {
+    int? boardSize,
+  }) {
     if (arrows.isEmpty) {
       return const [];
     }
 
-    final remaining = List<Arrow>.from(
-      arrows,
-    );
+    final size = boardSize ?? _inferBoardSize(arrows);
 
+    if (size < 1) {
+      throw ArgumentError(
+        'Board size must be positive.',
+      );
+    }
+
+    final remaining = List<Arrow>.from(arrows);
     final solution = <Arrow>[];
 
     while (remaining.isNotEmpty) {
-      final removable = _findRemovableArrow(
+      final removable = _findRemovableArrows(
         remaining,
+        size,
       );
 
-      if (removable == null) {
+      if (removable.isEmpty) {
         throw StateError(
           'Could not build a reverse solution. '
           'No arrow can currently leave the board.',
         );
       }
 
-      solution.add(removable);
-      remaining.remove(removable);
+      final selected = removable.first;
+
+      solution.add(selected);
+      remaining.remove(selected);
     }
 
     return solution;
   }
 
-  Arrow? _findRemovableArrow(
+  List<Arrow> _findRemovableArrows(
     List<Arrow> remaining,
+    int boardSize,
   ) {
+    final removable = <Arrow>[];
+
     for (final arrow in remaining) {
       if (_canLeave(
         arrow,
         remaining,
+        boardSize,
       )) {
-        return arrow;
+        removable.add(arrow);
       }
     }
 
-    return null;
+    return removable;
   }
 
   bool _canLeave(
     Arrow arrow,
     List<Arrow> remaining,
+    int boardSize,
   ) {
     final tip = _geometry.tip(
       arrow,
     );
 
-    final direction = _geometry.exitDirection(
+    final direction =
+        _geometry.exitDirection(
       arrow,
     );
 
@@ -74,39 +89,64 @@ class ReverseSolutionBuilder {
         direction,
       );
 
-      final blockingArrow = _findBlockingArrow(
+      if (!_geometry.isInside(
         current,
-        remaining,
-        arrow,
-      );
-
-      if (blockingArrow != null) {
-        return false;
+        boardSize,
+      )) {
+        return true;
       }
 
-      return true;
+      if (_isBlocked(
+        current,
+        arrow,
+        remaining,
+      )) {
+        return false;
+      }
     }
   }
 
-  Arrow? _findBlockingArrow(
+  bool _isBlocked(
     GridCell cell,
-    List<Arrow> arrows,
-    Arrow ignoredArrow,
+    Arrow movingArrow,
+    List<Arrow> remaining,
   ) {
-    for (final arrow in arrows) {
-      if (arrow == ignoredArrow) {
+    for (final other in remaining) {
+      if (other == movingArrow) {
         continue;
       }
 
+      if (_geometry.cells(other).contains(
+            cell,
+          )) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  int _inferBoardSize(
+    List<Arrow> arrows,
+  ) {
+    var maximum = 0;
+
+    for (final arrow in arrows) {
       final cells = _geometry.cells(
         arrow,
       );
 
-      if (cells.contains(cell)) {
-        return arrow;
+      for (final cell in cells) {
+        if (cell.row > maximum) {
+          maximum = cell.row;
+        }
+
+        if (cell.column > maximum) {
+          maximum = cell.column;
+        }
       }
     }
 
-    return null;
+    return maximum + 1;
   }
 }
