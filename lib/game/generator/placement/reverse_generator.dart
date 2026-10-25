@@ -5,16 +5,21 @@ import '../../level_data.dart';
 import '../geometry/arrow_geometry.dart';
 import '../rules/placement_rules.dart';
 import 'placement_candidate.dart';
+import 'reverse_arrow_factory.dart';
 
 class ReverseGenerator {
   const ReverseGenerator({
     ArrowGeometry geometry = const ArrowGeometry(),
     PlacementRules rules = const PlacementRules(),
+    ReverseArrowFactory arrowFactory =
+        const ReverseArrowFactory(),
   })  : _geometry = geometry,
-        _rules = rules;
+        _rules = rules,
+        _arrowFactory = arrowFactory;
 
   final ArrowGeometry _geometry;
   final PlacementRules _rules;
+  final ReverseArrowFactory _arrowFactory;
 
   LevelData generate({
     required int size,
@@ -31,6 +36,12 @@ class ReverseGenerator {
     if (arrowCount < 1) {
       throw ArgumentError(
         'Arrow count must be positive.',
+      );
+    }
+
+    if (maxAttemptsPerArrow < 1) {
+      throw ArgumentError(
+        'Maximum attempts must be positive.',
       );
     }
 
@@ -73,8 +84,8 @@ class ReverseGenerator {
     for (var attempt = 0;
         attempt < maxAttempts;
         attempt++) {
-      final arrow = _createRandomArrow(
-        size: size,
+      final arrow = _arrowFactory.create(
+        boardSize: size,
         random: random,
       );
 
@@ -129,71 +140,22 @@ class ReverseGenerator {
     ];
   }
 
-  Arrow _createRandomArrow({
-    required int size,
-    required Random random,
-  }) {
-    final row = random.nextInt(size);
-    final column = random.nextInt(size);
-
-    final direction = ArrowDirection
-        .values[random.nextInt(
-      ArrowDirection.values.length,
-    )];
-
-    final maxLength = _maxStraightLength(
-      row: row,
-      column: column,
-      direction: direction,
-      size: size,
-    );
-
-    final length = 1 +
-        random.nextInt(
-          min(maxLength, 3),
-        );
-
-    return Arrow(
-      row: row,
-      column: column,
-      direction: direction,
-      length: length,
-    );
-  }
-
-  int _maxStraightLength({
-    required int row,
-    required int column,
-    required ArrowDirection direction,
-    required int size,
-  }) {
-    switch (direction) {
-      case ArrowDirection.up:
-        return row + 1;
-
-      case ArrowDirection.right:
-        return size - column;
-
-      case ArrowDirection.down:
-        return size - row;
-
-      case ArrowDirection.left:
-        return column + 1;
-    }
-  }
-
   int _priority(
     Arrow arrow,
     int size,
   ) {
-    final tip = _geometry.tip(arrow);
+    final tip = _geometry.tip(
+      arrow,
+    );
 
     final distanceToEdge =
         _distanceToEdge(
       tip.row,
       tip.column,
       size,
-      _geometry.exitDirection(arrow),
+      _geometry.exitDirection(
+        arrow,
+      ),
     );
 
     return 100 - distanceToEdge;
