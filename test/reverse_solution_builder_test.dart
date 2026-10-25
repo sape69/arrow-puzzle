@@ -6,176 +6,207 @@ import 'package:arrow_puzzle/game/generator/placement/reverse_solution_builder.d
 void main() {
   const builder = ReverseSolutionBuilder();
 
+  const arrowA = Arrow(
+    row: 0,
+    column: 0,
+    direction: ArrowDirection.right,
+    length: 1,
+  );
+
+  const arrowB = Arrow(
+    row: 2,
+    column: 2,
+    direction: ArrowDirection.left,
+    length: 1,
+  );
+
+  const arrowC = Arrow(
+    row: 4,
+    column: 4,
+    direction: ArrowDirection.up,
+    length: 1,
+  );
+
   test(
-    'empty arrow list should produce an empty solution',
+    'builder should return an empty plan for empty input',
     () {
-      final solution = builder.build(
+      final plan = builder.build(
         const [],
+        boardSize: 5,
       );
 
       expect(
-        solution,
-        isEmpty,
+        plan.isEmpty,
+        isTrue,
+      );
+
+      expect(
+        plan.length,
+        0,
       );
     },
   );
 
   test(
-    'single arrow should be the only solution step',
+    'builder should create a plan for a single arrow',
     () {
-      const arrow = Arrow(
-        row: 3,
-        column: 3,
-        direction: ArrowDirection.up,
-        length: 1,
-      );
-
-      final solution = builder.build(
-        [
-          arrow,
+      final plan = builder.build(
+        const [
+          arrowA,
         ],
+        boardSize: 5,
       );
 
       expect(
-        solution,
-        [
-          arrow,
-        ],
+        plan.length,
+        1,
+      );
+
+      expect(
+        plan[0],
+        arrowA,
       );
     },
   );
 
   test(
-    'arrows that can exit should be returned in removable order',
+    'builder should include every arrow exactly once',
     () {
-      const first = Arrow(
-        row: 0,
-        column: 0,
-        direction: ArrowDirection.up,
-        length: 1,
-      );
-
-      const second = Arrow(
-        row: 2,
-        column: 2,
-        direction: ArrowDirection.right,
-        length: 1,
-      );
-
-      final solution = builder.build(
-        [
-          first,
-          second,
+      final plan = builder.build(
+        const [
+          arrowA,
+          arrowB,
+          arrowC,
         ],
+        boardSize: 5,
       );
 
       expect(
-        solution.length,
-        2,
+        plan.length,
+        3,
       );
 
       expect(
-        solution[0],
-        first,
-      );
-
-      expect(
-        solution[1],
-        second,
+        plan.orderedArrows.toSet(),
+        equals({
+          arrowA,
+          arrowB,
+          arrowC,
+        }),
       );
     },
   );
 
   test(
-    'blocked arrow should become removable after blocker is removed',
+    'builder should build a solution when arrows can leave independently',
+    () {
+      final plan = builder.build(
+        const [
+          arrowA,
+          arrowB,
+          arrowC,
+        ],
+        boardSize: 5,
+      );
+
+      expect(
+        plan.isNotEmpty,
+        isTrue,
+      );
+
+      expect(
+        plan.length,
+        3,
+      );
+    },
+  );
+
+  test(
+    'builder should remove a blocking arrow before the blocked arrow',
     () {
       const blocker = Arrow(
-        row: 0,
-        column: 1,
-        direction: ArrowDirection.up,
+        row: 2,
+        column: 4,
+        direction: ArrowDirection.right,
         length: 1,
       );
 
       const blocked = Arrow(
-        row: 0,
-        column: 0,
+        row: 2,
+        column: 2,
         direction: ArrowDirection.right,
         length: 1,
       );
 
-      final solution = builder.build(
-        [
+      final plan = builder.build(
+        const [
           blocked,
           blocker,
         ],
+        boardSize: 5,
       );
 
       expect(
-        solution.length,
+        plan.length,
         2,
       );
 
       expect(
-        solution[0],
-        blocker,
-      );
-
-      expect(
-        solution[1],
-        blocked,
+        plan.indexOf(blocker),
+        lessThan(
+          plan.indexOf(blocked),
+        ),
       );
     },
   );
 
   test(
-    'solution should contain every arrow exactly once',
+    'builder should throw when no arrow can leave',
     () {
-      const first = Arrow(
-        row: 0,
-        column: 0,
-        direction: ArrowDirection.up,
+      const arrowOne = Arrow(
+        row: 2,
+        column: 1,
+        direction: ArrowDirection.right,
         length: 1,
       );
 
-      const second = Arrow(
+      const arrowTwo = Arrow(
         row: 2,
         column: 2,
-        direction: ArrowDirection.down,
-        length: 1,
-      );
-
-      const third = Arrow(
-        row: 4,
-        column: 4,
         direction: ArrowDirection.left,
         length: 1,
       );
 
-      final solution = builder.build(
-        [
-          first,
-          second,
-          third,
+      expect(
+        () => builder.build(
+          const [
+            arrowOne,
+            arrowTwo,
+          ],
+          boardSize: 5,
+        ),
+        throwsStateError,
+      );
+    },
+  );
+
+  test(
+    'builder should infer board size when it is omitted',
+    () {
+      final plan = builder.build(
+        const [
+          arrowC,
         ],
       );
 
       expect(
-        solution.length,
-        3,
+        plan.length,
+        1,
       );
 
       expect(
-        solution.toSet().length,
-        3,
-      );
-
-      expect(
-        solution.toSet(),
-        {
-          first,
-          second,
-          third,
-        },
+        plan[0],
+        arrowC,
       );
     },
   );
